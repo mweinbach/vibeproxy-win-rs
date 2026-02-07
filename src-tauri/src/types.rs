@@ -164,6 +164,8 @@ pub struct UsageSummary {
     pub total_tokens: i64,
     pub input_tokens: i64,
     pub output_tokens: i64,
+    pub cached_tokens: i64,
+    pub reasoning_tokens: i64,
     pub error_count: i64,
     pub error_rate: f64,
 }
@@ -175,6 +177,8 @@ pub struct UsageTimeseriesPoint {
     pub total_tokens: i64,
     pub input_tokens: i64,
     pub output_tokens: i64,
+    pub cached_tokens: i64,
+    pub reasoning_tokens: i64,
     pub error_count: i64,
 }
 
@@ -188,6 +192,8 @@ pub struct UsageBreakdownRow {
     pub total_tokens: i64,
     pub input_tokens: i64,
     pub output_tokens: i64,
+    pub cached_tokens: i64,
+    pub reasoning_tokens: i64,
     pub error_count: i64,
     pub last_seen: Option<String>,
 }

@@ -76,7 +76,7 @@ Core modules in `src-tauri/src/`:
 
 6. **Usage tracking**
    - Inference requests (`/v1`, `/api/v1`, `/api/provider`) are tracked in local SQLite.
-   - Captures request count, status, provider/model/account attribution, and token usage when available.
+   - Captures request count, status, provider/model/account attribution, and token usage (input/output/total/cached/reasoning) when available.
 
 ## Config merging
 

@@ -58,6 +58,8 @@ export interface UsageSummary {
   total_tokens: number;
   input_tokens: number;
   output_tokens: number;
+  cached_tokens: number;
+  reasoning_tokens: number;
   error_count: number;
   error_rate: number;
 }
@@ -68,6 +70,8 @@ export interface UsageTimeseriesPoint {
   total_tokens: number;
   input_tokens: number;
   output_tokens: number;
+  cached_tokens: number;
+  reasoning_tokens: number;
   error_count: number;
 }
 
@@ -80,6 +84,8 @@ export interface UsageBreakdownRow {
   total_tokens: number;
   input_tokens: number;
   output_tokens: number;
+  cached_tokens: number;
+  reasoning_tokens: number;
   error_count: number;
   last_seen: string | null;
 }

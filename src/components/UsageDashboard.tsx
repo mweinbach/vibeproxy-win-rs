@@ -130,6 +130,18 @@ export default function UsageDashboard({
           </span>
         </div>
         <div className="stat-card">
+          <span className="stat-label">Cached Tokens</span>
+          <span className="stat-value">
+            {formatNumber(vibe.summary.cached_tokens)}
+          </span>
+        </div>
+        <div className="stat-card">
+          <span className="stat-label">Reasoning Tokens</span>
+          <span className="stat-value">
+            {formatNumber(vibe.summary.reasoning_tokens)}
+          </span>
+        </div>
+        <div className="stat-card">
           <span className="stat-label">Error Rate</span>
           <span className="stat-value">{formatPercent(vibe.summary.error_rate)}</span>
         </div>
@@ -217,6 +229,8 @@ export default function UsageDashboard({
                     <th>Account</th>
                     <th>Requests</th>
                     <th>Tokens</th>
+                    <th>Cached</th>
+                    <th>Reasoning</th>
                     <th>Last Seen</th>
                   </tr>
                 </thead>
@@ -228,6 +242,8 @@ export default function UsageDashboard({
                       <td>{row.account_label || row.account_key}</td>
                       <td>{formatNumber(row.requests)}</td>
                       <td>{formatNumber(row.total_tokens)}</td>
+                      <td>{formatNumber(row.cached_tokens)}</td>
+                      <td>{formatNumber(row.reasoning_tokens)}</td>
                       <td>{row.last_seen ? new Date(row.last_seen).toLocaleString() : "-"}</td>
                     </tr>
                   ))}

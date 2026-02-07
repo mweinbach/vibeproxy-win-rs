@@ -13,6 +13,8 @@ const EMPTY_DASHBOARD: UsageDashboardPayload = {
       total_tokens: 0,
       input_tokens: 0,
       output_tokens: 0,
+      cached_tokens: 0,
+      reasoning_tokens: 0,
       error_count: 0,
       error_rate: 0,
     },

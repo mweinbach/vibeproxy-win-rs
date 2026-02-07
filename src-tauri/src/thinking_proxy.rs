@@ -663,7 +663,8 @@ fn parse_usage_object(value: &serde_json::Value) -> Option<TokenUsage> {
         ],
     );
     let total_tokens =
-        find_number_in_object(obj, &["total_tokens", "totalTokenCount", "tokens"]);
+        find_number_in_object(obj, &["total_tokens", "totalTokenCount", "tokens"])
+            .or_else(|| find_number_in_object_deep(value, &["total_tokens", "totalTokenCount", "tokens"]));
     let cached_tokens = find_number_in_object(
         obj,
         &[
@@ -672,11 +673,28 @@ fn parse_usage_object(value: &serde_json::Value) -> Option<TokenUsage> {
             "cache_read_input_tokens",
             "cache_creation_input_tokens",
         ],
-    );
+    )
+    .or_else(|| {
+        find_number_in_object_deep(
+            value,
+            &[
+                "cached_tokens",
+                "cached_input_tokens",
+                "cache_read_input_tokens",
+                "cache_creation_input_tokens",
+            ],
+        )
+    });
     let reasoning_tokens = find_number_in_object(
         obj,
         &["reasoning_tokens", "thinking_tokens", "reasoningTokenCount"],
-    );
+    )
+    .or_else(|| {
+        find_number_in_object_deep(
+            value,
+            &["reasoning_tokens", "thinking_tokens", "reasoningTokenCount"],
+        )
+    });
     let account_hint = find_string_or_number_in_object(
         obj,
         &["auth_index", "account_index", "account_id", "account"],
@@ -745,6 +763,44 @@ fn find_string_or_number_in_object(
         }
     }
     None
+}
+
+fn find_number_in_object_deep(value: &serde_json::Value, keys: &[&str]) -> Option<i64> {
+    match value {
+        serde_json::Value::Object(map) => {
+            for key in keys {
+                if let Some(v) = map.get(*key) {
+                    if let Some(parsed) = v.as_i64() {
+                        return Some(parsed);
+                    }
+                    if let Some(parsed) = v.as_u64() {
+                        return Some(parsed as i64);
+                    }
+                    if let Some(parsed) = v.as_f64() {
+                        return Some(parsed.round() as i64);
+                    }
+                    if let Some(parsed) = v.as_str().and_then(|s| s.parse::<i64>().ok()) {
+                        return Some(parsed);
+                    }
+                }
+            }
+            for nested in map.values() {
+                if let Some(found) = find_number_in_object_deep(nested, keys) {
+                    return Some(found);
+                }
+            }
+            None
+        }
+        serde_json::Value::Array(arr) => {
+            for nested in arr {
+                if let Some(found) = find_number_in_object_deep(nested, keys) {
+                    return Some(found);
+                }
+            }
+            None
+        }
+        _ => None,
+    }
 }
 
 fn is_claude_model_request(body: &str) -> bool {
@@ -1287,5 +1343,29 @@ mod tests {
         ));
         assert!(!is_claude_model_request(r#"{"model":"gpt-4"}"#));
         assert!(!is_claude_model_request(r#"{"invalid":"json"}"#));
+    }
+
+    #[test]
+    fn test_extract_usage_nested_cached_and_reasoning_tokens() {
+        let payload = serde_json::json!({
+            "usage": {
+                "input_tokens": 100,
+                "input_tokens_details": {
+                    "cached_tokens": 42
+                },
+                "output_tokens": 50,
+                "output_tokens_details": {
+                    "reasoning_tokens": 31
+                },
+                "total_tokens": 150
+            }
+        });
+
+        let usage = extract_usage_from_json_value(&payload).expect("expected usage");
+        assert_eq!(usage.input_tokens, Some(100));
+        assert_eq!(usage.cached_tokens, Some(42));
+        assert_eq!(usage.output_tokens, Some(50));
+        assert_eq!(usage.reasoning_tokens, Some(31));
+        assert_eq!(usage.total_tokens, Some(150));
     }
 }

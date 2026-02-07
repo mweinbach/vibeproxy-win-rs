@@ -1,5 +1,6 @@
 use chrono::{TimeZone, Utc};
 use rusqlite::{params, Connection, OptionalExtension};
+use serde_json::Value;
 use std::path::{Path, PathBuf};
 
 use crate::auth_manager;
@@ -157,6 +158,8 @@ impl UsageTracker {
               total_tokens INTEGER NOT NULL,
               input_tokens INTEGER NOT NULL,
               output_tokens INTEGER NOT NULL,
+              cached_tokens INTEGER NOT NULL DEFAULT 0,
+              reasoning_tokens INTEGER NOT NULL DEFAULT 0,
               error_count INTEGER NOT NULL,
               PRIMARY KEY (day_utc, provider, model, account_key)
             );
@@ -186,7 +189,164 @@ impl UsageTracker {
             "#,
         )
         .map_err(|e| format!("Failed to initialize usage schema: {}", e))?;
+        let _ = conn.execute(
+            "ALTER TABLE usage_events ADD COLUMN cached_tokens INTEGER",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE usage_rollups_daily ADD COLUMN cached_tokens INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
+        let _ = conn.execute(
+            "ALTER TABLE usage_rollups_daily ADD COLUMN reasoning_tokens INTEGER NOT NULL DEFAULT 0",
+            [],
+        );
+        self.backfill_usage_from_json(&conn)?;
         Ok(())
+    }
+
+    fn backfill_usage_from_json(&self, conn: &Connection) -> Result<(), String> {
+        let mut stmt = conn
+            .prepare(
+                r#"
+                SELECT id, usage_json, cached_tokens, reasoning_tokens
+                FROM usage_events
+                WHERE usage_json IS NOT NULL
+                  AND (cached_tokens IS NULL OR reasoning_tokens IS NULL)
+                "#,
+            )
+            .map_err(|e| format!("Failed to prepare usage backfill query: {}", e))?;
+
+        let rows = stmt
+            .query_map([], |row| {
+                Ok((
+                    row.get::<_, i64>(0)?,
+                    row.get::<_, Option<String>>(1)?,
+                    row.get::<_, Option<i64>>(2)?,
+                    row.get::<_, Option<i64>>(3)?,
+                ))
+            })
+            .map_err(|e| format!("Failed to execute usage backfill query: {}", e))?;
+
+        let mut updates: Vec<(i64, Option<i64>, Option<i64>)> = Vec::new();
+        for row in rows {
+            let (id, usage_json, cached_tokens, reasoning_tokens) =
+                row.map_err(|e| format!("Failed to read usage backfill row: {}", e))?;
+
+            let Some(raw) = usage_json else {
+                continue;
+            };
+            let Ok(json) = serde_json::from_str::<Value>(&raw) else {
+                continue;
+            };
+
+            let extracted_cached = cached_tokens.or_else(|| {
+                Self::find_number_in_json_deep(
+                    &json,
+                    &[
+                        "cached_tokens",
+                        "cached_input_tokens",
+                        "cache_read_input_tokens",
+                        "cache_creation_input_tokens",
+                    ],
+                )
+            });
+            let extracted_reasoning = reasoning_tokens.or_else(|| {
+                Self::find_number_in_json_deep(
+                    &json,
+                    &["reasoning_tokens", "thinking_tokens", "reasoningTokenCount"],
+                )
+            });
+
+            if extracted_cached != cached_tokens || extracted_reasoning != reasoning_tokens {
+                updates.push((id, extracted_cached, extracted_reasoning));
+            }
+        }
+
+        if !updates.is_empty() {
+            let tx = conn
+                .unchecked_transaction()
+                .map_err(|e| format!("Failed to start usage backfill transaction: {}", e))?;
+            for (id, cached_tokens, reasoning_tokens) in updates {
+                tx.execute(
+                    "UPDATE usage_events SET cached_tokens = ?, reasoning_tokens = ? WHERE id = ?",
+                    params![cached_tokens, reasoning_tokens, id],
+                )
+                .map_err(|e| format!("Failed to update usage backfill row {}: {}", id, e))?;
+            }
+            tx.commit()
+                .map_err(|e| format!("Failed to commit usage backfill transaction: {}", e))?;
+        }
+
+        self.rebuild_daily_rollups(conn)
+    }
+
+    fn rebuild_daily_rollups(&self, conn: &Connection) -> Result<(), String> {
+        conn.execute("DELETE FROM usage_rollups_daily", [])
+            .map_err(|e| format!("Failed to clear daily rollups during rebuild: {}", e))?;
+        conn.execute(
+            r#"
+            INSERT INTO usage_rollups_daily (
+              day_utc, provider, model, account_key, requests,
+              total_tokens, input_tokens, output_tokens, cached_tokens, reasoning_tokens, error_count
+            )
+            SELECT
+              day_utc,
+              provider,
+              model,
+              account_key,
+              COUNT(*) AS requests,
+              COALESCE(SUM(COALESCE(total_tokens, 0)), 0) AS total_tokens,
+              COALESCE(SUM(COALESCE(input_tokens, 0)), 0) AS input_tokens,
+              COALESCE(SUM(COALESCE(output_tokens, 0)), 0) AS output_tokens,
+              COALESCE(SUM(COALESCE(cached_tokens, 0)), 0) AS cached_tokens,
+              COALESCE(SUM(COALESCE(reasoning_tokens, 0)), 0) AS reasoning_tokens,
+              COALESCE(SUM(CASE WHEN is_success = 0 THEN 1 ELSE 0 END), 0) AS error_count
+            FROM usage_events
+            GROUP BY day_utc, provider, model, account_key
+            "#,
+            [],
+        )
+        .map_err(|e| format!("Failed to rebuild daily rollups: {}", e))?;
+        Ok(())
+    }
+
+    fn find_number_in_json_deep(value: &Value, keys: &[&str]) -> Option<i64> {
+        match value {
+            Value::Object(map) => {
+                for key in keys {
+                    if let Some(v) = map.get(*key) {
+                        if let Some(n) = v.as_i64() {
+                            return Some(n);
+                        }
+                        if let Some(n) = v.as_u64() {
+                            return Some(n as i64);
+                        }
+                        if let Some(n) = v.as_f64() {
+                            return Some(n.round() as i64);
+                        }
+                        if let Some(n) = v.as_str().and_then(|s| s.parse::<i64>().ok()) {
+                            return Some(n);
+                        }
+                    }
+                }
+                for nested in map.values() {
+                    if let Some(found) = Self::find_number_in_json_deep(nested, keys) {
+                        return Some(found);
+                    }
+                }
+                None
+            }
+            Value::Array(items) => {
+                for nested in items {
+                    if let Some(found) = Self::find_number_in_json_deep(nested, keys) {
+                        return Some(found);
+                    }
+                }
+                None
+            }
+            _ => None,
+        }
     }
 
     pub async fn record_event(&self, event: UsageEvent) -> Result<(), String> {
@@ -255,14 +415,16 @@ impl UsageTracker {
                 r#"
                 INSERT INTO usage_rollups_daily (
                   day_utc, provider, model, account_key, requests, total_tokens,
-                  input_tokens, output_tokens, error_count
-                ) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?)
+                  input_tokens, output_tokens, cached_tokens, reasoning_tokens, error_count
+                ) VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(day_utc, provider, model, account_key)
                 DO UPDATE SET
                   requests = usage_rollups_daily.requests + 1,
                   total_tokens = usage_rollups_daily.total_tokens + excluded.total_tokens,
                   input_tokens = usage_rollups_daily.input_tokens + excluded.input_tokens,
                   output_tokens = usage_rollups_daily.output_tokens + excluded.output_tokens,
+                  cached_tokens = usage_rollups_daily.cached_tokens + excluded.cached_tokens,
+                  reasoning_tokens = usage_rollups_daily.reasoning_tokens + excluded.reasoning_tokens,
                   error_count = usage_rollups_daily.error_count + excluded.error_count
                 "#,
                 params![
@@ -273,6 +435,8 @@ impl UsageTracker {
                     total_tokens.unwrap_or(0),
                     event.input_tokens.unwrap_or(0),
                     event.output_tokens.unwrap_or(0),
+                    event.cached_tokens.unwrap_or(0),
+                    event.reasoning_tokens.unwrap_or(0),
                     error_count,
                 ],
             )
@@ -302,6 +466,8 @@ impl UsageTracker {
                           COALESCE(SUM(COALESCE(total_tokens, 0)), 0),
                           COALESCE(SUM(COALESCE(input_tokens, 0)), 0),
                           COALESCE(SUM(COALESCE(output_tokens, 0)), 0),
+                          COALESCE(SUM(COALESCE(cached_tokens, 0)), 0),
+                          COALESCE(SUM(COALESCE(reasoning_tokens, 0)), 0),
                           COALESCE(SUM(CASE WHEN is_success = 0 THEN 1 ELSE 0 END), 0)
                         FROM usage_events
                         WHERE timestamp_utc >= ?
@@ -314,7 +480,9 @@ impl UsageTracker {
                         total_tokens: row.get::<_, i64>(1)?,
                         input_tokens: row.get::<_, i64>(2)?,
                         output_tokens: row.get::<_, i64>(3)?,
-                        error_count: row.get::<_, i64>(4)?,
+                        cached_tokens: row.get::<_, i64>(4)?,
+                        reasoning_tokens: row.get::<_, i64>(5)?,
+                        error_count: row.get::<_, i64>(6)?,
                         error_rate: 0.0,
                     })
                 })
@@ -328,6 +496,8 @@ impl UsageTracker {
                           COALESCE(SUM(COALESCE(total_tokens, 0)), 0),
                           COALESCE(SUM(COALESCE(input_tokens, 0)), 0),
                           COALESCE(SUM(COALESCE(output_tokens, 0)), 0),
+                          COALESCE(SUM(COALESCE(cached_tokens, 0)), 0),
+                          COALESCE(SUM(COALESCE(reasoning_tokens, 0)), 0),
                           COALESCE(SUM(CASE WHEN is_success = 0 THEN 1 ELSE 0 END), 0)
                         FROM usage_events
                         "#,
@@ -339,7 +509,9 @@ impl UsageTracker {
                         total_tokens: row.get::<_, i64>(1)?,
                         input_tokens: row.get::<_, i64>(2)?,
                         output_tokens: row.get::<_, i64>(3)?,
-                        error_count: row.get::<_, i64>(4)?,
+                        cached_tokens: row.get::<_, i64>(4)?,
+                        reasoning_tokens: row.get::<_, i64>(5)?,
+                        error_count: row.get::<_, i64>(6)?,
                         error_rate: 0.0,
                     })
                 })
@@ -362,6 +534,8 @@ impl UsageTracker {
                       COALESCE(SUM(COALESCE(total_tokens, 0)), 0) AS total_tokens,
                       COALESCE(SUM(COALESCE(input_tokens, 0)), 0) AS input_tokens,
                       COALESCE(SUM(COALESCE(output_tokens, 0)), 0) AS output_tokens,
+                      COALESCE(SUM(COALESCE(cached_tokens, 0)), 0) AS cached_tokens,
+                      COALESCE(SUM(COALESCE(reasoning_tokens, 0)), 0) AS reasoning_tokens,
                       COALESCE(SUM(CASE WHEN is_success = 0 THEN 1 ELSE 0 END), 0) AS error_count
                     FROM usage_events
                     WHERE timestamp_utc >= ?
@@ -378,6 +552,8 @@ impl UsageTracker {
                       COALESCE(SUM(COALESCE(total_tokens, 0)), 0) AS total_tokens,
                       COALESCE(SUM(COALESCE(input_tokens, 0)), 0) AS input_tokens,
                       COALESCE(SUM(COALESCE(output_tokens, 0)), 0) AS output_tokens,
+                      COALESCE(SUM(COALESCE(cached_tokens, 0)), 0) AS cached_tokens,
+                      COALESCE(SUM(COALESCE(reasoning_tokens, 0)), 0) AS reasoning_tokens,
                       COALESCE(SUM(CASE WHEN is_success = 0 THEN 1 ELSE 0 END), 0) AS error_count
                     FROM usage_events
                     GROUP BY bucket
@@ -408,7 +584,9 @@ impl UsageTracker {
                     total_tokens: row.get::<_, i64>(2).unwrap_or(0),
                     input_tokens: row.get::<_, i64>(3).unwrap_or(0),
                     output_tokens: row.get::<_, i64>(4).unwrap_or(0),
-                    error_count: row.get::<_, i64>(5).unwrap_or(0),
+                    cached_tokens: row.get::<_, i64>(5).unwrap_or(0),
+                    reasoning_tokens: row.get::<_, i64>(6).unwrap_or(0),
+                    error_count: row.get::<_, i64>(7).unwrap_or(0),
                 });
             }
 
@@ -423,6 +601,8 @@ impl UsageTracker {
                   COALESCE(SUM(COALESCE(total_tokens, 0)), 0) AS total_tokens,
                   COALESCE(SUM(COALESCE(input_tokens, 0)), 0) AS input_tokens,
                   COALESCE(SUM(COALESCE(output_tokens, 0)), 0) AS output_tokens,
+                  COALESCE(SUM(COALESCE(cached_tokens, 0)), 0) AS cached_tokens,
+                  COALESCE(SUM(COALESCE(reasoning_tokens, 0)), 0) AS reasoning_tokens,
                   COALESCE(SUM(CASE WHEN is_success = 0 THEN 1 ELSE 0 END), 0) AS error_count,
                   MAX(timestamp_utc) AS last_seen
                 FROM usage_events
@@ -442,6 +622,8 @@ impl UsageTracker {
                   COALESCE(SUM(COALESCE(total_tokens, 0)), 0) AS total_tokens,
                   COALESCE(SUM(COALESCE(input_tokens, 0)), 0) AS input_tokens,
                   COALESCE(SUM(COALESCE(output_tokens, 0)), 0) AS output_tokens,
+                  COALESCE(SUM(COALESCE(cached_tokens, 0)), 0) AS cached_tokens,
+                  COALESCE(SUM(COALESCE(reasoning_tokens, 0)), 0) AS reasoning_tokens,
                   COALESCE(SUM(CASE WHEN is_success = 0 THEN 1 ELSE 0 END), 0) AS error_count,
                   MAX(timestamp_utc) AS last_seen
                 FROM usage_events
@@ -467,7 +649,7 @@ impl UsageTracker {
                 .next()
                 .map_err(|e| format!("Failed to iterate usage breakdown rows: {}", e))?
             {
-                let last_seen_ts: i64 = row.get::<_, i64>(9).unwrap_or(0);
+                let last_seen_ts: i64 = row.get::<_, i64>(11).unwrap_or(0);
                 let last_seen = if last_seen_ts > 0 {
                     Utc.timestamp_opt(last_seen_ts, 0)
                         .single()
@@ -484,7 +666,9 @@ impl UsageTracker {
                     total_tokens: row.get::<_, i64>(5).unwrap_or(0),
                     input_tokens: row.get::<_, i64>(6).unwrap_or(0),
                     output_tokens: row.get::<_, i64>(7).unwrap_or(0),
-                    error_count: row.get::<_, i64>(8).unwrap_or(0),
+                    cached_tokens: row.get::<_, i64>(8).unwrap_or(0),
+                    reasoning_tokens: row.get::<_, i64>(9).unwrap_or(0),
+                    error_count: row.get::<_, i64>(10).unwrap_or(0),
                     last_seen,
                 });
             }
