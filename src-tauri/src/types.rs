@@ -206,33 +206,7 @@ pub struct VibeUsageDashboard {
     pub breakdown: Vec<UsageBreakdownRow>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct NativeUsageSummary {
-    pub total_requests: i64,
-    pub total_tokens: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NativeUsageRow {
-    pub source: String,
-    pub model: String,
-    pub auth_index: Option<String>,
-    pub requests: i64,
-    pub tokens: i64,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct NativeUsagePanel {
-    pub status: String,
-    pub effective_range: String,
-    pub message: Option<String>,
-    pub summary: Option<NativeUsageSummary>,
-    pub rows: Vec<NativeUsageRow>,
-    pub last_synced_at: Option<String>,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UsageDashboardPayload {
     pub vibe: VibeUsageDashboard,
-    pub native: NativeUsagePanel,
 }

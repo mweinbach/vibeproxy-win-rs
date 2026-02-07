@@ -21,14 +21,6 @@ const EMPTY_DASHBOARD: UsageDashboardPayload = {
     timeseries: [],
     breakdown: [],
   },
-  native: {
-    status: "unavailable",
-    effective_range: DEFAULT_RANGE,
-    message: "Native usage is unavailable.",
-    summary: null,
-    rows: [],
-    last_synced_at: null,
-  },
 };
 
 export function useUsageDashboard(isActive: boolean) {
@@ -37,35 +29,31 @@ export function useUsageDashboard(isActive: boolean) {
   const [isLoading, setIsLoading] = useState(true);
   const [lastError, setLastError] = useState<string | null>(null);
 
-  const fetchDashboard = useCallback(
-    async (forceNativeRefresh = false) => {
-      try {
-        const result = await invoke<UsageDashboardPayload>("get_usage_dashboard", {
-          range,
-          force_native_refresh: forceNativeRefresh,
-        });
-        setDashboard(result);
-        setLastError(null);
-      } catch (err) {
-        console.error("Failed to load usage dashboard:", err);
-        setLastError(toErrorMessage(err, "Failed to load usage dashboard"));
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [range],
-  );
+  const fetchDashboard = useCallback(async () => {
+    try {
+      const result = await invoke<UsageDashboardPayload>("get_usage_dashboard", {
+        range,
+      });
+      setDashboard(result);
+      setLastError(null);
+    } catch (err) {
+      console.error("Failed to load usage dashboard:", err);
+      setLastError(toErrorMessage(err, "Failed to load usage dashboard"));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [range]);
 
   useEffect(() => {
     setIsLoading(true);
-    fetchDashboard(true);
+    fetchDashboard();
   }, [fetchDashboard]);
 
   useEffect(() => {
     if (!isActive) return;
 
     const id = window.setInterval(() => {
-      fetchDashboard(false);
+      fetchDashboard();
     }, 10_000);
 
     return () => {
@@ -80,7 +68,7 @@ export function useUsageDashboard(isActive: boolean) {
       dashboard,
       isLoading,
       lastError,
-      refresh: () => fetchDashboard(true),
+      refresh: fetchDashboard,
       clearLastError: () => setLastError(null),
     }),
     [dashboard, fetchDashboard, isLoading, lastError, range],

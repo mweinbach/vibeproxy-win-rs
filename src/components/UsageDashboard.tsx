@@ -4,6 +4,7 @@ import type {
   UsageRange,
   UsageBreakdownRow,
 } from "../types";
+import "./UsageDashboard.css";
 
 interface UsageDashboardProps {
   dashboard: UsageDashboardPayload;
@@ -53,8 +54,11 @@ export default function UsageDashboard({
   onDismissError,
 }: UsageDashboardProps) {
   const vibe = dashboard.vibe;
-  const native = dashboard.native;
   const providerBreakdown = getProviderBreakdown(vibe.breakdown);
+  const totalProviderTokens = providerBreakdown.reduce(
+    (sum, row) => sum + row.tokens,
+    0,
+  );
   const maxPointTokens = Math.max(
     1,
     ...vibe.timeseries.map((point) => point.total_tokens),
@@ -89,7 +93,11 @@ export default function UsageDashboard({
               </button>
             ))}
           </div>
-          <button type="button" className="btn btn-sm" onClick={onRefresh}>
+          <button
+            type="button"
+            className="btn btn-sm usage-refresh-btn"
+            onClick={onRefresh}
+          >
             <RefreshCw size={14} className={isLoading ? "spin" : ""} />
             Refresh
           </button>
@@ -97,7 +105,11 @@ export default function UsageDashboard({
         {error ? (
           <div className="operation-error-banner" role="alert">
             <p className="operation-error-message">{error}</p>
-            <button type="button" className="btn btn-sm" onClick={onDismissError}>
+            <button
+              type="button"
+              className="btn btn-sm"
+              onClick={onDismissError}
+            >
               Dismiss
             </button>
           </div>
@@ -143,12 +155,14 @@ export default function UsageDashboard({
         </div>
         <div className="stat-card">
           <span className="stat-label">Error Rate</span>
-          <span className="stat-value">{formatPercent(vibe.summary.error_rate)}</span>
+          <span className="stat-value">
+            {formatPercent(vibe.summary.error_rate)}
+          </span>
         </div>
       </div>
 
       <div className="usage-grid-two">
-        <section className="settings-section">
+        <section className="settings-section usage-insight-card usage-trend-card">
           <div className="section-header">
             <h2 className="section-title">Token Trend</h2>
             <p className="section-description">Total tokens per time bucket.</p>
@@ -158,7 +172,10 @@ export default function UsageDashboard({
           ) : (
             <div className="token-chart">
               {vibe.timeseries.map((point) => (
-                <div className="token-bar" key={`${point.bucket}-${point.total_tokens}`}>
+                <div
+                  className="token-bar"
+                  key={`${point.bucket}-${point.total_tokens}`}
+                >
                   <div
                     className="token-bar-fill"
                     style={{
@@ -176,10 +193,12 @@ export default function UsageDashboard({
           )}
         </section>
 
-        <section className="settings-section">
+        <section className="settings-section usage-insight-card usage-provider-card">
           <div className="section-header">
             <h2 className="section-title">Provider Share</h2>
-            <p className="section-description">Token distribution by provider.</p>
+            <p className="section-description">
+              Token distribution by provider.
+            </p>
           </div>
           {providerBreakdown.length === 0 ? (
             <p className="empty-note">No provider usage yet.</p>
@@ -189,7 +208,14 @@ export default function UsageDashboard({
                 <div className="provider-share-row" key={row.provider}>
                   <div className="provider-share-label">
                     <span>{row.provider}</span>
-                    <span>{formatNumber(row.tokens)} tokens</span>
+                    <span>
+                      {formatNumber(row.tokens)} tokens |{" "}
+                      {formatPercent(
+                        totalProviderTokens > 0
+                          ? (row.tokens / totalProviderTokens) * 100
+                          : 0,
+                      )}
+                    </span>
                   </div>
                   <div className="provider-share-track">
                     <div
@@ -209,109 +235,52 @@ export default function UsageDashboard({
         </section>
       </div>
 
-      <div className="usage-grid-two">
-        <section className="settings-section">
-          <div className="section-header">
-            <h2 className="section-title">Detailed Breakdown</h2>
-            <p className="section-description">
-              Provider, model, and account-level request/token usage.
-            </p>
-          </div>
-          {vibe.breakdown.length === 0 ? (
-            <p className="empty-note">No detailed usage data available yet.</p>
-          ) : (
-            <div className="usage-table-wrap">
-              <table className="usage-table">
-                <thead>
-                  <tr>
-                    <th>Provider</th>
-                    <th>Model</th>
-                    <th>Account</th>
-                    <th>Requests</th>
-                    <th>Tokens</th>
-                    <th>Cached</th>
-                    <th>Reasoning</th>
-                    <th>Last Seen</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {vibe.breakdown.map((row) => (
-                    <tr key={`${row.provider}-${row.model}-${row.account_key}`}>
-                      <td>{row.provider}</td>
-                      <td>{row.model}</td>
-                      <td>{row.account_label || row.account_key}</td>
-                      <td>{formatNumber(row.requests)}</td>
-                      <td>{formatNumber(row.total_tokens)}</td>
-                      <td>{formatNumber(row.cached_tokens)}</td>
-                      <td>{formatNumber(row.reasoning_tokens)}</td>
-                      <td>{row.last_seen ? new Date(row.last_seen).toLocaleString() : "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-
-        <section className="settings-section">
-          <div className="section-header">
-            <h2 className="section-title">Native Comparison (Temporary)</h2>
-            <p className="section-description">
-              CLIProxy native usage status: <strong>{native.status}</strong>
-            </p>
-          </div>
-          <div className="native-summary-grid">
-            <div className="stat-card">
-              <span className="stat-label">Effective Range</span>
-              <span className="stat-value">{native.effective_range}</span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-label">Requests</span>
-              <span className="stat-value">
-                {formatNumber(native.summary?.total_requests ?? 0)}
-              </span>
-            </div>
-            <div className="stat-card">
-              <span className="stat-label">Tokens</span>
-              <span className="stat-value">
-                {formatNumber(native.summary?.total_tokens ?? 0)}
-              </span>
-            </div>
-          </div>
-          {native.message ? <p className="native-note">{native.message}</p> : null}
-          <p className="native-note">
-            Last synced: {native.last_synced_at ? new Date(native.last_synced_at).toLocaleString() : "Never"}
+      <section className="settings-section usage-breakdown-section">
+        <div className="section-header">
+          <h2 className="section-title">Detailed Breakdown</h2>
+          <p className="section-description">
+            Provider, model, and account-level request/token usage.
           </p>
-          {native.rows.length > 0 ? (
-            <div className="usage-table-wrap native-table-wrap">
-              <table className="usage-table">
-                <thead>
-                  <tr>
-                    <th>Source</th>
-                    <th>Model</th>
-                    <th>Auth Index</th>
-                    <th>Requests</th>
-                    <th>Tokens</th>
+        </div>
+        {vibe.breakdown.length === 0 ? (
+          <p className="empty-note">No detailed usage data available yet.</p>
+        ) : (
+          <div className="usage-table-wrap">
+            <table className="usage-table">
+              <thead>
+                <tr>
+                  <th>Provider</th>
+                  <th>Model</th>
+                  <th>Account</th>
+                  <th>Requests</th>
+                  <th>Tokens</th>
+                  <th>Cached</th>
+                  <th>Reasoning</th>
+                  <th>Last Seen</th>
+                </tr>
+              </thead>
+              <tbody>
+                {vibe.breakdown.map((row) => (
+                  <tr key={`${row.provider}-${row.model}-${row.account_key}`}>
+                    <td>{row.provider}</td>
+                    <td>{row.model}</td>
+                    <td>{row.account_label || row.account_key}</td>
+                    <td>{formatNumber(row.requests)}</td>
+                    <td>{formatNumber(row.total_tokens)}</td>
+                    <td>{formatNumber(row.cached_tokens)}</td>
+                    <td>{formatNumber(row.reasoning_tokens)}</td>
+                    <td>
+                      {row.last_seen
+                        ? new Date(row.last_seen).toLocaleString()
+                        : "-"}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {native.rows.map((row, index) => (
-                    <tr key={`${row.source}-${row.model}-${index}`}>
-                      <td>{row.source}</td>
-                      <td>{row.model}</td>
-                      <td>{row.auth_index ?? "-"}</td>
-                      <td>{formatNumber(row.requests)}</td>
-                      <td>{formatNumber(row.tokens)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="empty-note">No native row-level data available.</p>
-          )}
-        </section>
-      </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
     </div>
   );
 }

@@ -6,7 +6,6 @@ use crate::settings;
 use crate::thinking_proxy::ThinkingProxy;
 use crate::tray;
 use crate::types::*;
-use crate::usage_native;
 use crate::usage_tracker::{UsageRangeQuery, UsageTracker};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -395,16 +394,9 @@ pub async fn sync_theme_icons(
 pub async fn get_usage_dashboard(
     state: State<'_, AppState>,
     range: Option<String>,
-    force_native_refresh: Option<bool>,
 ) -> Result<UsageDashboardPayload, String> {
     let range = range.unwrap_or_else(|| "7d".to_string());
     let parsed_range = UsageRangeQuery::from_input(&range);
-    let force_native_refresh = force_native_refresh.unwrap_or(false);
-
     let vibe = state.usage_tracker.get_vibe_dashboard(parsed_range).await?;
-    let native =
-        usage_native::get_native_panel(state.usage_tracker.as_ref(), parsed_range, force_native_refresh)
-            .await;
-
-    Ok(UsageDashboardPayload { vibe, native })
+    Ok(UsageDashboardPayload { vibe })
 }

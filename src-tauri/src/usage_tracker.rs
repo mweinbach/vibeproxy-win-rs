@@ -1,12 +1,11 @@
 use chrono::{TimeZone, Utc};
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{params, Connection};
 use serde_json::Value;
 use std::path::{Path, PathBuf};
 
 use crate::auth_manager;
 use crate::types::{
-    NativeUsagePanel, NativeUsageRow, NativeUsageSummary, UsageBreakdownRow, UsageSummary,
-    UsageTimeseriesPoint, VibeUsageDashboard,
+    UsageBreakdownRow, UsageSummary, UsageTimeseriesPoint, VibeUsageDashboard,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -77,12 +76,6 @@ pub struct UsageEvent {
     pub cached_tokens: Option<i64>,
     pub reasoning_tokens: Option<i64>,
     pub usage_json: Option<String>,
-}
-
-#[derive(Debug, Clone)]
-pub struct NativeSnapshotRecord {
-    pub panel: NativeUsagePanel,
-    pub synced_ts: Option<i64>,
 }
 
 #[derive(Debug, Clone)]
@@ -164,28 +157,6 @@ impl UsageTracker {
               PRIMARY KEY (day_utc, provider, model, account_key)
             );
 
-            CREATE TABLE IF NOT EXISTS native_usage_snapshots (
-              range_key TEXT PRIMARY KEY,
-              effective_range TEXT NOT NULL,
-              status TEXT NOT NULL,
-              message TEXT,
-              synced_ts INTEGER,
-              total_requests INTEGER,
-              total_tokens INTEGER
-            );
-
-            CREATE TABLE IF NOT EXISTS native_usage_rows (
-              range_key TEXT NOT NULL,
-              row_index INTEGER NOT NULL,
-              source TEXT NOT NULL,
-              model TEXT NOT NULL,
-              auth_index TEXT,
-              requests INTEGER NOT NULL,
-              tokens INTEGER NOT NULL,
-              PRIMARY KEY (range_key, row_index),
-              FOREIGN KEY (range_key) REFERENCES native_usage_snapshots(range_key)
-                ON DELETE CASCADE
-            );
             "#,
         )
         .map_err(|e| format!("Failed to initialize usage schema: {}", e))?;
@@ -684,188 +655,4 @@ impl UsageTracker {
         .map_err(|e| format!("Failed to join usage dashboard query task: {}", e))?
     }
 
-    pub async fn save_native_snapshot(
-        &self,
-        range_key: &str,
-        panel: &NativeUsagePanel,
-    ) -> Result<(), String> {
-        let db_path = self.db_path.clone();
-        let range_key = range_key.to_string();
-        let panel = panel.clone();
-        tokio::task::spawn_blocking(move || {
-            let conn = Self::open_connection(&db_path)?;
-            let tx = conn
-                .unchecked_transaction()
-                .map_err(|e| format!("Failed to start native snapshot transaction: {}", e))?;
-
-            let (summary_requests, summary_tokens) = match panel.summary.as_ref() {
-                Some(summary) => (Some(summary.total_requests), Some(summary.total_tokens)),
-                None => (None, None),
-            };
-            let synced_ts = panel
-                .last_synced_at
-                .as_ref()
-                .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
-                .map(|dt| dt.timestamp());
-
-            tx.execute(
-                r#"
-                INSERT INTO native_usage_snapshots (
-                  range_key, effective_range, status, message, synced_ts, total_requests, total_tokens
-                ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(range_key)
-                DO UPDATE SET
-                  effective_range = excluded.effective_range,
-                  status = excluded.status,
-                  message = excluded.message,
-                  synced_ts = excluded.synced_ts,
-                  total_requests = excluded.total_requests,
-                  total_tokens = excluded.total_tokens
-                "#,
-                params![
-                    range_key,
-                    panel.effective_range,
-                    panel.status,
-                    panel.message,
-                    synced_ts,
-                    summary_requests,
-                    summary_tokens,
-                ],
-            )
-            .map_err(|e| format!("Failed to upsert native snapshot summary: {}", e))?;
-
-            tx.execute(
-                "DELETE FROM native_usage_rows WHERE range_key = ?",
-                params![range_key],
-            )
-            .map_err(|e| format!("Failed to clear native snapshot rows: {}", e))?;
-
-            for (idx, row) in panel.rows.iter().enumerate() {
-                tx.execute(
-                    r#"
-                    INSERT INTO native_usage_rows (
-                      range_key, row_index, source, model, auth_index, requests, tokens
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?)
-                    "#,
-                    params![
-                        range_key,
-                        idx as i64,
-                        row.source,
-                        row.model,
-                        row.auth_index,
-                        row.requests,
-                        row.tokens,
-                    ],
-                )
-                .map_err(|e| format!("Failed to insert native snapshot row: {}", e))?;
-            }
-
-            tx.commit()
-                .map_err(|e| format!("Failed to commit native snapshot transaction: {}", e))?;
-            Ok(())
-        })
-        .await
-        .map_err(|e| format!("Failed to join native snapshot write task: {}", e))?
-    }
-
-    pub async fn load_native_snapshot(
-        &self,
-        range_key: &str,
-    ) -> Result<Option<NativeSnapshotRecord>, String> {
-        let db_path = self.db_path.clone();
-        let range_key = range_key.to_string();
-        tokio::task::spawn_blocking(move || {
-            let conn = Self::open_connection(&db_path)?;
-            let mut stmt = conn
-                .prepare(
-                    r#"
-                    SELECT
-                      effective_range,
-                      status,
-                      message,
-                      synced_ts,
-                      total_requests,
-                      total_tokens
-                    FROM native_usage_snapshots
-                    WHERE range_key = ?
-                    "#,
-                )
-                .map_err(|e| format!("Failed to prepare native snapshot query: {}", e))?;
-
-            let summary_row: Option<(String, String, Option<String>, Option<i64>, Option<i64>, Option<i64>)> = stmt
-                .query_row(params![range_key], |row| {
-                    Ok((
-                        row.get::<_, String>(0)?,
-                        row.get::<_, String>(1)?,
-                        row.get::<_, Option<String>>(2)?,
-                        row.get::<_, Option<i64>>(3)?,
-                        row.get::<_, Option<i64>>(4)?,
-                        row.get::<_, Option<i64>>(5)?,
-                    ))
-                })
-                .optional()
-                .map_err(|e| format!("Failed to execute native snapshot query: {}", e))?;
-
-            let Some((effective_range, status, message, synced_ts, total_requests, total_tokens)) =
-                summary_row
-            else {
-                return Ok(None);
-            };
-
-            let mut rows_stmt = conn
-                .prepare(
-                    r#"
-                    SELECT source, model, auth_index, requests, tokens
-                    FROM native_usage_rows
-                    WHERE range_key = ?
-                    ORDER BY row_index ASC
-                    "#,
-                )
-                .map_err(|e| format!("Failed to prepare native rows query: {}", e))?;
-
-            let rows_iter = rows_stmt
-                .query_map(params![range_key], |row| {
-                    Ok(NativeUsageRow {
-                        source: row.get::<_, String>(0)?,
-                        model: row.get::<_, String>(1)?,
-                        auth_index: row.get::<_, Option<String>>(2)?,
-                        requests: row.get::<_, i64>(3)?,
-                        tokens: row.get::<_, i64>(4)?,
-                    })
-                })
-                .map_err(|e| format!("Failed to query native snapshot rows: {}", e))?;
-
-            let mut rows = Vec::new();
-            for row in rows_iter {
-                rows.push(row.map_err(|e| format!("Failed to read native snapshot row: {}", e))?);
-            }
-
-            let last_synced_at = synced_ts.and_then(|ts| {
-                Utc.timestamp_opt(ts, 0)
-                    .single()
-                    .map(|dt| dt.to_rfc3339())
-            });
-            let summary = match (total_requests, total_tokens) {
-                (Some(requests), Some(tokens)) => Some(NativeUsageSummary {
-                    total_requests: requests,
-                    total_tokens: tokens,
-                }),
-                _ => None,
-            };
-
-            Ok(Some(NativeSnapshotRecord {
-                panel: NativeUsagePanel {
-                    status,
-                    effective_range,
-                    message,
-                    summary,
-                    rows,
-                    last_synced_at,
-                },
-                synced_ts,
-            }))
-        })
-        .await
-        .map_err(|e| format!("Failed to join native snapshot read task: {}", e))?
-    }
 }

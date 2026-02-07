@@ -97,31 +97,8 @@ export interface VibeUsageDashboard {
   breakdown: UsageBreakdownRow[];
 }
 
-export interface NativeUsageSummary {
-  total_requests: number;
-  total_tokens: number;
-}
-
-export interface NativeUsageRow {
-  source: string;
-  model: string;
-  auth_index: string | null;
-  requests: number;
-  tokens: number;
-}
-
-export interface NativeUsagePanel {
-  status: "ok" | "unavailable" | "stale" | string;
-  effective_range: string;
-  message: string | null;
-  summary: NativeUsageSummary | null;
-  rows: NativeUsageRow[];
-  last_synced_at: string | null;
-}
-
 export interface UsageDashboardPayload {
   vibe: VibeUsageDashboard;
-  native: NativeUsagePanel;
 }
 
 export const SERVICE_DISPLAY_NAMES: Record<ServiceType, string> = {

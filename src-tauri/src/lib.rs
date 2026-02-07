@@ -9,7 +9,6 @@ mod settings;
 mod thinking_proxy;
 mod tray;
 mod types;
-mod usage_native;
 mod usage_tracker;
 
 use commands::AppState;
