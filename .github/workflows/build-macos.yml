@@ -43,12 +43,16 @@ jobs:
       - name: Install JS deps
         run: bun install --frozen-lockfile
 
-      - name: Build (universal DMG)
-        env:
-          # Ensure we use rustup-managed toolchain (not system/Homebrew).
-          RUSTC: ${{ env.HOME }}/.cargo/bin/rustc
+      - name: Toolchain info
         run: |
-          bun run tauri build --ci -t universal-apple-darwin --runner $HOME/.cargo/bin/cargo
+          which rustc
+          rustc -vV
+          which cargo
+          cargo -vV
+
+      - name: Build (universal DMG)
+        run: |
+          bun run tauri build --ci -t universal-apple-darwin --runner cargo
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
@@ -66,4 +70,3 @@ jobs:
           gh release upload "${{ inputs.release_tag }}" \
             src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg \
             --clobber
-
