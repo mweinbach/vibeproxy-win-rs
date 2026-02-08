@@ -15,6 +15,14 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-pc-windows-msvc
+            asset_arch: amd64
+          - target: aarch64-pc-windows-msvc
+            asset_arch: arm64
     permissions:
       contents: write
     steps:
@@ -36,6 +44,9 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install Windows target
+        run: rustup target add "${{ matrix.target }}"
+
       - name: Install bundler dependencies (NSIS + WiX)
         run: choco install nsis wixtoolset -y
 
@@ -43,16 +54,18 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build
-        run: bun run tauri build --ci
+        env:
+          CLI_PROXY_TARGET_ARCH: ${{ matrix.asset_arch }}
+        run: bun run tauri build --ci -t "${{ matrix.target }}"
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vibeproxy-windows
+          name: vibeproxy-windows-${{ matrix.target }}
           if-no-files-found: error
           path: |
-            src-tauri/target/release/bundle/nsis/*.exe
-            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
+            src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
 
       - name: Upload to GitHub release (optional)
         if: ${{ inputs.release_tag != '' }}
@@ -61,7 +74,6 @@ jobs:
         shell: bash
         run: |
           gh release upload "${{ inputs.release_tag }}" \
-            src-tauri/target/release/bundle/nsis/*.exe \
-            src-tauri/target/release/bundle/msi/*.msi \
+            src-tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe \
+            src-tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi \
             --clobber
-

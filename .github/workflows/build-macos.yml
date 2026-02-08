@@ -15,6 +15,14 @@ on:
 jobs:
   build:
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            asset_arch: arm64
+          - target: x86_64-apple-darwin
+            asset_arch: amd64
     permissions:
       contents: write
     steps:
@@ -36,9 +44,8 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install macOS targets (universal build)
-        run: |
-          rustup target add aarch64-apple-darwin x86_64-apple-darwin
+      - name: Install macOS target
+        run: rustup target add "${{ matrix.target }}"
 
       - name: Install JS deps
         run: bun install --frozen-lockfile
@@ -50,17 +57,19 @@ jobs:
           which cargo
           cargo -vV
 
-      - name: Build (universal DMG)
+      - name: Build (DMG)
+        env:
+          CLI_PROXY_TARGET_ARCH: ${{ matrix.asset_arch }}
         run: |
-          bun run tauri build --ci -t universal-apple-darwin --runner cargo
+          bun run tauri build --ci -t "${{ matrix.target }}" --runner cargo
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vibeproxy-macos
+          name: vibeproxy-macos-${{ matrix.target }}
           if-no-files-found: error
           path: |
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
 
       - name: Upload to GitHub release (optional)
         if: ${{ inputs.release_tag != '' }}
@@ -68,5 +77,5 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release upload "${{ inputs.release_tag }}" \
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg \
+            src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg \
             --clobber

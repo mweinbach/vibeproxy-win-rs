@@ -22,25 +22,77 @@ const RELEASE_URL = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/rel
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
 const OUTPUT_DIR = path.join(REPO_ROOT, "src-tauri", "resources");
-const OUTPUT_VERSION = path.join(OUTPUT_DIR, "cli-proxy-api-plus.version");
-
-const TMP_EXTRACT_DIR = path.join(OUTPUT_DIR, "cli-proxy-api-plus.extract.tmp");
 
 const USER_AGENT = "vibeproxy-win-build-sync";
 
+let LAST_TMP_ARCHIVE = "";
+let LAST_TMP_EXTRACT_DIR = "";
+
+function normalizeArch(rawValue) {
+  if (!rawValue) return null;
+  const value = rawValue.trim().toLowerCase();
+  if (value === "amd64" || value === "x64" || value === "x86_64") return "amd64";
+  if (value === "arm64" || value === "aarch64") return "arm64";
+  return null;
+}
+
+function normalizePlatform(rawValue) {
+  if (!rawValue) return null;
+  const value = rawValue.trim().toLowerCase();
+  if (value === "win32" || value === "windows") return "win32";
+  if (value === "darwin" || value === "macos" || value === "osx") return "darwin";
+  if (value === "linux") return "linux";
+  return null;
+}
+
+function resolveArch() {
+  const envValue =
+    (process.env.CLI_PROXY_TARGET_ARCH || process.env.CLI_PROXY_ARCH || "")
+      .trim();
+  if (envValue) {
+    const normalized = normalizeArch(envValue);
+    if (!normalized) {
+      throw new Error(
+        `[sync-cli-proxy-binary] Unsupported CLI_PROXY_TARGET_ARCH: ${envValue}`,
+      );
+    }
+    return normalized;
+  }
+
+  if (process.arch === "x64") return "amd64";
+  if (process.arch === "arm64") return "arm64";
+  return null;
+}
+
+function resolvePlatform() {
+  const envValue =
+    (process.env.CLI_PROXY_TARGET_PLATFORM || process.env.CLI_PROXY_PLATFORM || "")
+      .trim();
+  if (envValue) {
+    const normalized = normalizePlatform(envValue);
+    if (!normalized) {
+      throw new Error(
+        `[sync-cli-proxy-binary] Unsupported CLI_PROXY_TARGET_PLATFORM: ${envValue}`,
+      );
+    }
+    return normalized;
+  }
+
+  return process.platform;
+}
+
 function resolveTarget() {
-  const arch = (() => {
-    if (process.arch === "x64") return "amd64";
-    if (process.arch === "arm64") return "arm64";
-    return null;
-  })();
+  const arch = resolveArch();
+  const platform = resolvePlatform();
 
   if (!arch) {
     throw new Error(`[sync-cli-proxy-binary] Unsupported arch: ${process.arch}`);
   }
 
-  if (process.platform === "win32") {
+  if (platform === "win32") {
     return {
+      platform,
+      arch,
       assetSuffix: `_windows_${arch}.zip`,
       binaryName: "cli-proxy-api-plus.exe",
       archiveExt: ".zip",
@@ -48,8 +100,10 @@ function resolveTarget() {
     };
   }
 
-  if (process.platform === "darwin") {
+  if (platform === "darwin") {
     return {
+      platform,
+      arch,
       assetSuffix: `_darwin_${arch}.tar.gz`,
       binaryName: "cli-proxy-api-plus",
       archiveExt: ".tar.gz",
@@ -57,8 +111,10 @@ function resolveTarget() {
     };
   }
 
-  if (process.platform === "linux") {
+  if (platform === "linux") {
     return {
+      platform,
+      arch,
       assetSuffix: `_linux_${arch}.tar.gz`,
       binaryName: "cli-proxy-api-plus",
       archiveExt: ".tar.gz",
@@ -78,19 +134,21 @@ async function fileExists(filePath) {
   }
 }
 
-async function readExistingVersion() {
+async function readExistingVersion(versionFilePath) {
   try {
-    return (await readFile(OUTPUT_VERSION, "utf8")).trim();
+    return (await readFile(versionFilePath, "utf8")).trim();
   } catch {
     return "";
   }
 }
 
 async function fetchJson(url) {
+  const authToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || "";
   const response = await fetch(url, {
     headers: {
       "User-Agent": USER_AGENT,
       Accept: "application/vnd.github+json",
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
     },
   });
 
@@ -200,11 +258,21 @@ async function main() {
 
   await mkdir(OUTPUT_DIR, { recursive: true });
 
+  const OUTPUT_VERSION = path.join(
+    OUTPUT_DIR,
+    `cli-proxy-api-plus.${target.platform}.${target.arch}.version`,
+  );
   const OUTPUT_BINARY = path.join(OUTPUT_DIR, target.binaryName);
   const TMP_ARCHIVE = path.join(
     OUTPUT_DIR,
-    `cli-proxy-api-plus.download${target.archiveExt}`,
+    `cli-proxy-api-plus.download.${target.platform}.${target.arch}${target.archiveExt}`,
   );
+  const TMP_EXTRACT_DIR = path.join(
+    OUTPUT_DIR,
+    `cli-proxy-api-plus.extract.${target.platform}.${target.arch}.tmp`,
+  );
+  LAST_TMP_ARCHIVE = TMP_ARCHIVE;
+  LAST_TMP_EXTRACT_DIR = TMP_EXTRACT_DIR;
 
   const release = await fetchJson(RELEASE_URL);
   const version =
@@ -213,7 +281,7 @@ async function main() {
     throw new Error("Could not resolve latest release tag_name from GitHub API");
   }
 
-  const existingVersion = await readExistingVersion();
+  const existingVersion = await readExistingVersion(OUTPUT_VERSION);
   if (existingVersion === version && (await fileExists(OUTPUT_BINARY))) {
     console.log(
       `[sync-cli-proxy-binary] Already up-to-date (${version}): ${OUTPUT_BINARY}`,
@@ -259,14 +327,11 @@ async function main() {
 }
 
 main().catch(async (error) => {
-  // Best-effort cleanup. TMP_ARCHIVE is platform-dependent so we clean by prefix.
-  await rm(path.join(OUTPUT_DIR, "cli-proxy-api-plus.download.zip"), {
-    force: true,
-  }).catch(() => {});
-  await rm(path.join(OUTPUT_DIR, "cli-proxy-api-plus.download.tar.gz"), {
-    force: true,
-  }).catch(() => {});
-  await rm(TMP_EXTRACT_DIR, { recursive: true, force: true }).catch(() => {});
+  // Best-effort cleanup.
+  await rm(LAST_TMP_ARCHIVE, { force: true }).catch(() => {});
+  await rm(LAST_TMP_EXTRACT_DIR, { recursive: true, force: true }).catch(
+    () => {},
+  );
   console.error("[sync-cli-proxy-binary] Failed:", error);
   process.exit(1);
 });
