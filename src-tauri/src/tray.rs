@@ -66,6 +66,9 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
 
     TrayIconBuilder::with_id("main-tray")
         .icon(icon)
+        // macOS: treat the icon as a template so the system automatically tints it
+        // (light/dark menu bar, vibrancy, etc).
+        .icon_as_template(cfg!(target_os = "macos"))
         .tooltip("VibeProxy")
         .menu(&menu)
         // macOS status-bar icons conventionally show the menu on left click.
@@ -279,6 +282,11 @@ pub fn update_tray_state(app: &AppHandle, is_running: bool) {
         // Update icon
         let icon = load_tray_icon(app, is_running);
         tray.set_icon(Some(icon)).ok();
+        #[cfg(target_os = "macos")]
+        {
+            // Re-apply template mode after icon changes.
+            tray.set_icon_as_template(true).ok();
+        }
 
         // Update tooltip
         let tooltip = if is_running {
