@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 - `src/`: React 19 + TypeScript frontend (UI components, hooks, shared types).
 - `src-tauri/src/`: Rust backend for Tauri commands, proxy logic, process/binary management, and tray behavior.
-- `src-tauri/resources/`: bundled runtime/config assets (including `cli-proxy-api-plus.exe` for packaged builds).
+- `src-tauri/resources/`: bundled runtime/config assets (including `cli-proxy-api-plus` / `cli-proxy-api-plus.exe` for packaged builds).
 - `scripts/`: build/support scripts such as runtime sync (`sync-cli-proxy-binary.mjs`).
 - `docs/`: architecture, development workflow, and troubleshooting notes.
 - Build artifacts (`dist/`, `src-tauri/target/`, `node_modules/`) are generated; avoid editing them directly.

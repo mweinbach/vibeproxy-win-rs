@@ -2,19 +2,20 @@ use std::sync::Mutex;
 use tauri::{
     image::Image,
     menu::{Menu, MenuItem, PredefinedMenuItem},
-    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    tray::TrayIconBuilder,
     AppHandle, Emitter, Manager,
 };
+
+#[cfg(not(target_os = "macos"))]
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconEvent};
 
 #[cfg(target_os = "windows")]
 const CREATE_NO_WINDOW: u32 = 0x08000000;
 
+#[cfg(target_os = "windows")]
 fn apply_hidden_process_flags(cmd: &mut std::process::Command) {
-    #[cfg(target_os = "windows")]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(CREATE_NO_WINDOW);
-    }
+    use std::os::windows::process::CommandExt;
+    cmd.creation_flags(CREATE_NO_WINDOW);
 }
 
 /// Store menu item references for later updates
@@ -67,18 +68,20 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
         .icon(icon)
         .tooltip("VibeProxy")
         .menu(&menu)
-        .show_menu_on_left_click(false)
+        // macOS status-bar icons conventionally show the menu on left click.
+        .show_menu_on_left_click(cfg!(target_os = "macos"))
         .on_menu_event(move |app, event| {
             handle_menu_event(app, event.id().as_ref());
         })
-        .on_tray_icon_event(|tray, event| {
+        .on_tray_icon_event(|_tray, _event| {
+            #[cfg(not(target_os = "macos"))]
             if let TrayIconEvent::Click {
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
                 ..
-            } = event
+            } = _event
             {
-                let app = tray.app_handle();
+                let app = _tray.app_handle();
                 show_main_window(app);
             }
         })

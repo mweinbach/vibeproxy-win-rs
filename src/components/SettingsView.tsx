@@ -71,6 +71,25 @@ const GLYPH_MAP: Record<ThemeMode, string> = {
   dark: glyphDark,
 };
 
+function isTauriRuntime(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+  return "__TAURI_INTERNALS__" in window;
+}
+
+function isMacOS(): boolean {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+  return /Macintosh|Mac OS X/.test(navigator.userAgent);
+}
+
+function shouldShowCustomTitleBar(): boolean {
+  // macOS uses native window decorations in the desktop app.
+  return !(isTauriRuntime() && isMacOS());
+}
+
 function getInitialThemeMode(): ThemeMode {
   if (typeof window === "undefined") {
     return "light";
@@ -223,7 +242,7 @@ export default function SettingsView() {
 
   return (
     <div className="settings-view">
-      <TitleBar />
+      {shouldShowCustomTitleBar() ? <TitleBar /> : null}
       <aside className="sidebar" data-tauri-drag-region>
         <div className="sidebar-header" data-tauri-drag-region>
           <img src={GLYPH_MAP[themeMode]} alt="VibeProxy" className="app-hero-icon" />

@@ -109,6 +109,15 @@ pub fn run() {
             tray::setup_tray(&app_handle)?;
             tray::update_main_window_icon(&app_handle);
 
+            // Use native window decorations on macOS. The app is configured as frameless by
+            // default for Windows, but macOS UX expects the native titlebar/traffic lights.
+            #[cfg(target_os = "macos")]
+            {
+                if let Some(window) = app.get_webview_window("main") {
+                    window.set_decorations(true).ok();
+                }
+            }
+
             // Ensure auth directory exists
             auth_manager::get_auth_dir();
 

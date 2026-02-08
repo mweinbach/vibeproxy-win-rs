@@ -17,13 +17,17 @@ bun run tauri build
 bun run sync:cli-proxy-binary
 ```
 
+Note: `bun run tauri dev` and `bun run tauri build` automatically run `sync:cli-proxy-binary` first via `src-tauri/tauri.conf.json`.
+
 ## Runtime/binary behavior
 
-- `src-tauri/resources/cli-proxy-api-plus.exe` is the bundled runtime used in packaged builds.
+- `src-tauri/resources/cli-proxy-api-plus` (macOS/Linux) and `src-tauri/resources/cli-proxy-api-plus.exe` (Windows) are the bundled runtimes used in packaged builds.
 - On startup, backend code resolves a runnable binary in this order:
-1. `%LOCALAPPDATA%\vibeproxy\cli-proxy-api-plus.exe`
-2. bundled resource binary (`src-tauri/resources/cli-proxy-api-plus.exe`)
-- If bundled exists but local copy does not, it is copied into `%LOCALAPPDATA%\vibeproxy\` when possible.
+1. Platform data dir:
+   - Windows: `%LOCALAPPDATA%\vibeproxy\cli-proxy-api-plus.exe`
+   - macOS: `~/Library/Application Support/vibeproxy/cli-proxy-api-plus`
+2. bundled resource binary (`src-tauri/resources/cli-proxy-api-plus*`)
+ - If bundled exists but local copy does not, it is copied into the platform data directory when possible.
 
 ## Dev vs web-only mode
 

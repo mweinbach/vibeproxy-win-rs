@@ -5,7 +5,7 @@
 VibeProxy runs two local servers:
 
 - `127.0.0.1:8317` - **ThinkingProxy** (Rust, in-process HTTP proxy)
-- `127.0.0.1:8318` - **CLIProxyAPIPlus** (external process: `cli-proxy-api-plus.exe`)
+- `127.0.0.1:8318` - **CLIProxyAPIPlus** (external process: `cli-proxy-api-plus` / `cli-proxy-api-plus.exe`)
 
 Client tools should talk to **`http://localhost:8317`**.
 
@@ -41,11 +41,11 @@ Core modules in `src-tauri/src/`:
 
 - `commands.rs` - Tauri command handlers exposed to the UI
 - `thinking_proxy.rs` - local HTTP proxy on `8317`
-- `server_manager.rs` - process manager for `cli-proxy-api-plus.exe` (spawn/stop/auth helpers)
+- `server_manager.rs` - process manager for `cli-proxy-api-plus` / `cli-proxy-api-plus.exe` (spawn/stop/auth helpers)
 - `binary_manager.rs` - resolves bundled vs downloaded runtime; downloads latest release and verifies SHA-256
 - `auth_manager.rs` - scans/deletes auth JSON files in `~/.cli-proxy-api/`
 - `config_manager.rs` - merges base config with provider toggles + Z.AI keys + managed remote-management key
-- `settings.rs` + `secure_store.rs` - settings persistence with DPAPI encryption for secrets
+- `settings.rs` + `secure_store.rs` - settings persistence with DPAPI encryption for secrets (base64 fallback on non-Windows)
 - `usage_tracker.rs` - local SQLite usage storage and dashboard aggregation
 - `usage_native.rs` - temporary native usage comparison fetch/parsing
 - `managed_key.rs` - generation/storage of internal management key for local-only native usage reads
@@ -103,4 +103,4 @@ Changes applied by the merger:
 
 - Servers bind to `127.0.0.1` only.
 - Remote management stays localhost-only (`allow-remote: false`).
-- Secrets are encrypted at rest on Windows using DPAPI (per-user). Treat local files as sensitive anyway.
+- Secrets are encrypted at rest on Windows using DPAPI (per-user), with a base64 fallback on non-Windows. Treat local files as sensitive anyway.

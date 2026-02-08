@@ -4,7 +4,7 @@
   "version": "0.1.1",
   "identifier": "com.automaze.vibeproxy",
   "build": {
-    "beforeDevCommand": "bun run dev",
+    "beforeDevCommand": "bun run sync:cli-proxy-binary && bun run dev",
     "devUrl": "http://localhost:1420",
     "beforeBuildCommand": "bun run sync:cli-proxy-binary && bun run build",
     "frontendDist": "../dist"

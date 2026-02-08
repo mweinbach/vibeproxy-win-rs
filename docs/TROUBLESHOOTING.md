@@ -10,7 +10,8 @@ bun run sync:cli-proxy-binary
 
 2. Confirm bundled binary exists:
 
-- `src-tauri/resources/cli-proxy-api-plus.exe`
+- macOS/Linux: `src-tauri/resources/cli-proxy-api-plus`
+- Windows: `src-tauri/resources/cli-proxy-api-plus.exe`
 
 3. If download/build is offline, set `SKIP_CLI_PROXY_SYNC=1` before `tauri build`.
 
