@@ -5,6 +5,10 @@ description = "VibeProxy - OAuth authentication proxy and unified AI model route
 authors = ["you"]
 edition = "2021"
 
+[[bin]]
+name = "VibeProxy"
+path = "src/main.rs"
+
 [lib]
 name = "vibeproxy_win_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
