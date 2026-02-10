@@ -64,6 +64,7 @@ jobs:
       - name: Build
         env:
           CLI_PROXY_TARGET_ARCH: ${{ matrix.asset_arch }}
+          GH_TOKEN: ${{ github.token }}
         run: bun run tauri build --ci -t "${{ matrix.target }}"
 
       - name: Upload workflow artifact
