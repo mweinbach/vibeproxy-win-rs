@@ -1,10 +1,9 @@
-import { BarChart3, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import type {
   UsageDashboardPayload,
   UsageRange,
   UsageBreakdownRow,
 } from "../types";
-import "./UsageDashboard.css";
 
 interface UsageDashboardProps {
   dashboard: UsageDashboardPayload;
@@ -70,16 +69,25 @@ export default function UsageDashboard({
 
   return (
     <div className="usage-dashboard">
-      <section className="settings-section usage-controls">
-        <div className="section-header" data-tauri-drag-region>
-          <div className="section-title-row">
-            <BarChart3 size={14} />
-            <h2 className="section-title">Usage Analytics</h2>
-          </div>
-          <p className="section-description">
-            Track requests and token usage by provider, model, and account.
-          </p>
+      <h1 className="page-title">Usage</h1>
+      <p className="page-subtitle">
+        Track requests and token usage by provider, model, and account.
+      </p>
+
+      {error ? (
+        <div className="operation-error-banner" role="alert">
+          <p className="operation-error-message">{error}</p>
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={onDismissError}
+          >
+            Dismiss
+          </button>
         </div>
+      ) : null}
+
+      <section className="settings-section usage-controls">
         <div className="usage-controls-row">
           <div className="usage-range-picker">
             {RANGE_OPTIONS.map((option) => (
@@ -102,52 +110,40 @@ export default function UsageDashboard({
             Refresh
           </button>
         </div>
-        {error ? (
-          <div className="operation-error-banner" role="alert">
-            <p className="operation-error-message">{error}</p>
-            <button
-              type="button"
-              className="btn btn-sm"
-              onClick={onDismissError}
-            >
-              Dismiss
-            </button>
-          </div>
-        ) : null}
       </section>
 
       <div className="usage-kpi-grid">
-        <div className="stat-card">
+        <div className="stat-item">
           <span className="stat-label">Total Tokens</span>
           <span className="stat-value">
             {formatNumber(vibe.summary.total_tokens)}
           </span>
         </div>
-        <div className="stat-card">
-          <span className="stat-label">Input Tokens</span>
+        <div className="stat-item">
+          <span className="stat-label">Input</span>
           <span className="stat-value">
             {formatNumber(vibe.summary.input_tokens)}
           </span>
         </div>
-        <div className="stat-card">
-          <span className="stat-label">Output Tokens</span>
+        <div className="stat-item">
+          <span className="stat-label">Output</span>
           <span className="stat-value">
             {formatNumber(vibe.summary.output_tokens)}
           </span>
         </div>
-        <div className="stat-card">
-          <span className="stat-label">Cached Tokens</span>
+        <div className="stat-item">
+          <span className="stat-label">Cached</span>
           <span className="stat-value">
             {formatNumber(vibe.summary.cached_tokens)}
           </span>
         </div>
-        <div className="stat-card">
-          <span className="stat-label">Reasoning Tokens</span>
+        <div className="stat-item">
+          <span className="stat-label">Reasoning</span>
           <span className="stat-value">
             {formatNumber(vibe.summary.reasoning_tokens)}
           </span>
         </div>
-        <div className="stat-card">
+        <div className="stat-item">
           <span className="stat-label">Error Rate</span>
           <span className="stat-value">
             {formatPercent(vibe.summary.error_rate)}
@@ -157,10 +153,7 @@ export default function UsageDashboard({
 
       <div className="usage-grid-two">
         <section className="settings-section usage-insight-card usage-trend-card">
-          <div className="section-header">
-            <h2 className="section-title">Token Trend</h2>
-            <p className="section-description">Total tokens per time bucket.</p>
-          </div>
+          <h2 className="section-title">Token Trend</h2>
           {vibe.timeseries.length === 0 ? (
             <p className="empty-note">No usage events yet for this range.</p>
           ) : (
@@ -188,12 +181,7 @@ export default function UsageDashboard({
         </section>
 
         <section className="settings-section usage-insight-card usage-provider-card">
-          <div className="section-header">
-            <h2 className="section-title">Provider Share</h2>
-            <p className="section-description">
-              Token distribution by provider.
-            </p>
-          </div>
+          <h2 className="section-title">Provider Share</h2>
           {providerBreakdown.length === 0 ? (
             <p className="empty-note">No provider usage yet.</p>
           ) : (
@@ -230,12 +218,7 @@ export default function UsageDashboard({
       </div>
 
       <section className="settings-section usage-breakdown-section">
-        <div className="section-header">
-          <h2 className="section-title">Detailed Breakdown</h2>
-          <p className="section-description">
-            Provider, model, and account-level request/token usage.
-          </p>
-        </div>
+        <h2 className="section-title">Detailed Breakdown</h2>
         {vibe.breakdown.length === 0 ? (
           <p className="empty-note">No detailed usage data available yet.</p>
         ) : (

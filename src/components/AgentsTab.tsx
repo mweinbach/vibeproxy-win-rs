@@ -129,56 +129,56 @@ export default function AgentsTab() {
 
   return (
     <div className="tab-content animate-in">
-      <section className="settings-section">
-        <div className="section-header" data-tauri-drag-region>
-          <h2 className="section-title">Custom Models</h2>
-          <p className="section-description">
-            Reads `~/.factory/settings.json` and lets you edit/remove only proxy models.
+      <h1 className="page-title">Custom Models</h1>
+      <p className="page-subtitle">
+        Manage Factory custom models powered by VibeProxy.
+      </p>
+
+      {lastAddResult ? (
+        <div className="auth-result-banner success" role="status" aria-live="polite">
+          <p className="auth-result-message">
+            Added {lastAddResult.added} (skipped {lastAddResult.skipped_duplicates} duplicates)
           </p>
         </div>
+      ) : null}
 
-        {lastAddResult ? (
-          <div className="auth-result-banner success" role="status" aria-live="polite">
-            <p className="auth-result-message">
-              Added {lastAddResult.added} (skipped {lastAddResult.skipped_duplicates} duplicates)
-            </p>
-          </div>
-        ) : null}
+      {lastRemoveResult ? (
+        <div className="auth-result-banner success" role="status" aria-live="polite">
+          <p className="auth-result-message">
+            Removed {lastRemoveResult.removed}.
+            {lastRemoveResult.skippedNonProxy > 0
+              ? ` Skipped ${lastRemoveResult.skippedNonProxy} non-proxy.`
+              : ""}
+            {lastRemoveResult.skippedNotFound > 0
+              ? ` ${lastRemoveResult.skippedNotFound} not found.`
+              : ""}
+          </p>
+        </div>
+      ) : null}
 
-        {lastRemoveResult ? (
-          <div className="auth-result-banner success" role="status" aria-live="polite">
-            <p className="auth-result-message">
-              Removed {lastRemoveResult.removed}.
-              {lastRemoveResult.skippedNonProxy > 0
-                ? ` Skipped ${lastRemoveResult.skippedNonProxy} non-proxy.`
-                : ""}
-              {lastRemoveResult.skippedNotFound > 0
-                ? ` ${lastRemoveResult.skippedNotFound} not found.`
-                : ""}
-            </p>
-          </div>
-        ) : null}
+      {lastError ? (
+        <div className="auth-result-banner error" role="alert">
+          <p className="auth-result-message">{lastError}</p>
+        </div>
+      ) : null}
 
-        {lastError ? (
-          <div className="auth-result-banner error" role="alert">
-            <p className="auth-result-message">{lastError}</p>
+      <section className="settings-section">
+        <div className="stats-grid">
+          <div className="stat-item">
+            <span className="stat-label">Total</span>
+            <span className="stat-value">{models.length}</span>
           </div>
-        ) : null}
+          <div className="stat-item">
+            <span className="stat-label">Proxy</span>
+            <span className="stat-value">{proxyCount}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">External</span>
+            <span className="stat-value">{externalCount}</span>
+          </div>
+        </div>
 
         <div className="agent-card">
-          <div className="agent-card-head">
-            <div className="agent-card-title">Factory Custom Models</div>
-            <div className="agent-card-meta">
-              {isLoading ? (
-                <span>Loading...</span>
-              ) : (
-                <span>
-                  {models.length} total | {proxyCount} proxy | {externalCount} external
-                </span>
-              )}
-            </div>
-          </div>
-
           <div className="agent-card-body">
             <div className="agent-actions">
               <button

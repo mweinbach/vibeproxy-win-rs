@@ -48,6 +48,64 @@ import iconQwenDark from "../assets/icons/dark/icon-qwen.png";
 import iconZaiDark from "../assets/icons/dark/icon-zai.png";
 
 type ThemeMode = "light" | "dark";
+type TabKey =
+  | "dashboard"
+  | "usage"
+  | "services"
+  | "models"
+  | "agents"
+  | "settings";
+
+const TAB_ITEMS: Array<{
+  key: TabKey;
+  label: string;
+  description: string;
+  icon: typeof LayoutDashboard;
+  group: "overview" | "configuration";
+}> = [
+  {
+    key: "dashboard",
+    label: "Dashboard",
+    description: "Runtime health and account readiness at a glance.",
+    icon: LayoutDashboard,
+    group: "overview",
+  },
+  {
+    key: "usage",
+    label: "Usage",
+    description: "Requests, token trends, and provider distribution.",
+    icon: PieChart,
+    group: "overview",
+  },
+  {
+    key: "services",
+    label: "Services",
+    description: "Enable providers and manage connected identities.",
+    icon: Cloud,
+    group: "configuration",
+  },
+  {
+    key: "models",
+    label: "Models",
+    description: "Browse model catalogs from your local runtime.",
+    icon: Boxes,
+    group: "configuration",
+  },
+  {
+    key: "agents",
+    label: "Custom Models",
+    description: "Manage Factory custom models powered by VibeProxy.",
+    icon: Bot,
+    group: "configuration",
+  },
+  {
+    key: "settings",
+    label: "Settings",
+    description: "Desktop behavior and local file controls.",
+    icon: SettingsIcon,
+    group: "configuration",
+  },
+];
 
 const SERVICE_ICON_MAP: Record<ThemeMode, Record<ServiceType, string>> = {
   light: {
@@ -136,9 +194,7 @@ export default function SettingsView() {
   const [showQwenDialog, setShowQwenDialog] = useState(false);
   const [showZaiDialog, setShowZaiDialog] = useState(false);
   const [themeMode, setThemeMode] = useState<ThemeMode>(getInitialThemeMode);
-  const [activeTab, setActiveTab] = useState<
-    "dashboard" | "usage" | "services" | "models" | "agents" | "settings"
-  >("dashboard");
+  const [activeTab, setActiveTab] = useState<TabKey>("dashboard");
   const {
     range: usageRange,
     setRange: setUsageRange,
@@ -240,6 +296,12 @@ export default function SettingsView() {
     0,
   );
   const activeAccounts = totalAccounts - expiredAccounts;
+
+  const overviewTabs = TAB_ITEMS.filter((item) => item.group === "overview");
+  const configurationTabs = TAB_ITEMS.filter(
+    (item) => item.group === "configuration",
+  );
+
   const dismissOperationalError = () => {
     clearServerError();
     clearSettingsError();
@@ -252,104 +314,92 @@ export default function SettingsView() {
       <aside className="sidebar" data-tauri-drag-region>
         <div className="sidebar-header" data-tauri-drag-region>
           <img src={GLYPH_MAP[themeMode]} alt="VibeProxy" className="app-hero-icon" />
-          <span className="sidebar-title">VibeProxy</span>
+          <div>
+            <p className="sidebar-eyebrow">Control Center</p>
+            <span className="sidebar-title">VibeProxy</span>
+          </div>
         </div>
 
         <nav className="sidebar-nav">
-          <button
-            className={`sidebar-item ${activeTab === "dashboard" ? "active" : ""}`}
-            onClick={() => setActiveTab("dashboard")}
-          >
-            <LayoutDashboard className="sidebar-icon" />
-            Dashboard
-          </button>
-          <button
-            className={`sidebar-item ${activeTab === "usage" ? "active" : ""}`}
-            onClick={() => setActiveTab("usage")}
-          >
-            <PieChart className="sidebar-icon" />
-            Usage
-          </button>
-          <button
-            className={`sidebar-item ${activeTab === "services" ? "active" : ""}`}
-            onClick={() => setActiveTab("services")}
-          >
-            <Cloud className="sidebar-icon" />
-            Services
-          </button>
-          <button
-            className={`sidebar-item ${activeTab === "models" ? "active" : ""}`}
-            onClick={() => setActiveTab("models")}
-          >
-            <Boxes className="sidebar-icon" />
-            Models
-          </button>
-          <button
-            className={`sidebar-item ${activeTab === "agents" ? "active" : ""}`}
-            onClick={() => setActiveTab("agents")}
-          >
-            <Bot className="sidebar-icon" />
-            Custom Models
-          </button>
-          <button
-            className={`sidebar-item ${activeTab === "settings" ? "active" : ""}`}
-            onClick={() => setActiveTab("settings")}
-          >
-            <SettingsIcon className="sidebar-icon" />
-            Settings
-          </button>
-        </nav>
+          <p className="sidebar-group-label">Overview</p>
+          {overviewTabs.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.key}
+                className={`sidebar-item ${activeTab === item.key ? "active" : ""}`}
+                onClick={() => setActiveTab(item.key)}
+              >
+                <Icon className="sidebar-icon" />
+                {item.label}
+              </button>
+            );
+          })}
 
-        <div className="sidebar-spacer" data-tauri-drag-region />
+          <p className="sidebar-group-label">Configure</p>
+          {configurationTabs.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.key}
+                className={`sidebar-item ${activeTab === item.key ? "active" : ""}`}
+                onClick={() => setActiveTab(item.key)}
+              >
+                <Icon className="sidebar-icon" />
+                {item.label}
+              </button>
+            );
+          })}
+        </nav>
 
         <div className="sidebar-footer">
           <div className={`status-pill ${serverState.is_running ? "running" : "stopped"}`}>
             <Power className="status-icon" size={12} />
             {serverState.is_running ? "Online" : "Offline"}
           </div>
+          <p className="sidebar-runtime-meta">
+            {enabledServiceCount} services · {activeAccounts} accounts
+          </p>
         </div>
       </aside>
 
-      <main className="settings-scroll">
-        {activeTab === "dashboard" && (
-          <div className="tab-content animate-in">
-            <header className="app-hero" data-tauri-drag-region>
-              <div className="app-hero-copy">
-                <h1 className="app-hero-title">Welcome back</h1>
-                <p className="app-hero-subtitle">
-                  Manage your proxy uptime and account routing.
-                </p>
-              </div>
-            </header>
+      <section className="app-shell">
+        <main className="settings-scroll">
+          {activeTab === "dashboard" && (
+            <div className="tab-content animate-in">
+              <h1 className="page-title">Dashboard</h1>
+              <p className="page-subtitle">
+                Runtime health and account readiness at a glance.
+              </p>
 
-            {operationalError ? (
-              <div className="operation-error-banner" role="alert">
-                <AlertCircle size={16} className="error-icon" />
-                <p className="operation-error-message">{operationalError}</p>
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  onClick={dismissOperationalError}
-                >
-                  Dismiss
-                </button>
-              </div>
-            ) : null}
+              {operationalError ? (
+                <div className="operation-error-banner" role="alert">
+                  <AlertCircle size={16} className="error-icon" />
+                  <p className="operation-error-message">{operationalError}</p>
+                  <button
+                    type="button"
+                    className="btn btn-sm"
+                    onClick={dismissOperationalError}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              ) : null}
 
-            <div className="stats-grid">
-              <div className="stat-card">
-                <span className="stat-label">Enabled services</span>
-                <span className="stat-value">{enabledServiceCount}</span>
+              <div className="stats-grid">
+                <div className="stat-item">
+                  <span className="stat-label">Services</span>
+                  <span className="stat-value">{enabledServiceCount}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Active</span>
+                  <span className="stat-value">{activeAccounts}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-label">Expired</span>
+                  <span className="stat-value">{expiredAccounts}</span>
+                </div>
               </div>
-              <div className="stat-card">
-                <span className="stat-label">Active accounts</span>
-                <span className="stat-value">{activeAccounts}</span>
-              </div>
-              <div className="stat-card">
-                <span className="stat-label">Expired accounts</span>
-                <span className="stat-value">{expiredAccounts}</span>
-              </div>
-            </div>
 
             <section className="settings-section">
               <div className="section-header" data-tauri-drag-region>
@@ -389,20 +439,20 @@ export default function SettingsView() {
 
         {activeTab === "services" && (
           <div className="tab-content animate-in">
-            <section className="settings-section">
-              <div className="section-header" data-tauri-drag-region>
-                <h2 className="section-title">Providers</h2>
-                <p className="section-description">Enable providers and manage connected accounts.</p>
+            <h1 className="page-title">Services</h1>
+            <p className="page-subtitle">
+              Enable providers and manage connected accounts.
+            </p>
+            {authResult ? (
+              <div
+                className={`auth-result-banner ${authResult.success ? "success" : "error"}`}
+                role="status"
+                aria-live="polite"
+              >
+                <p className="auth-result-message">{authResult.message}</p>
               </div>
-              {authResult ? (
-                <div
-                  className={`auth-result-banner ${authResult.success ? "success" : "error"}`}
-                  role="status"
-                  aria-live="polite"
-                >
-                  <p className="auth-result-message">{authResult.message}</p>
-                </div>
-              ) : null}
+            ) : null}
+            <section className="settings-section">
               <div className="service-list">
                 {SERVICE_ORDER.map((serviceType) => (
                   <ServiceRow
@@ -439,15 +489,15 @@ export default function SettingsView() {
 
         {activeTab === "settings" && (
           <div className="tab-content animate-in">
+            <h1 className="page-title">Settings</h1>
+            <p className="page-subtitle">
+              Desktop behavior and local file access.
+            </p>
             <section className="settings-section">
-              <div className="section-header" data-tauri-drag-region>
-                <h2 className="section-title">General Settings</h2>
-                <p className="section-description">Desktop behavior and local file access.</p>
-              </div>
               <div className="setting-row">
                 <div className="setting-label">
                   <span>Launch at login</span>
-                  <small>Start VibeProxy with Windows.</small>
+                  <small>Start VibeProxy automatically.</small>
                 </div>
                 <label className="toggle-switch">
                   <input
@@ -475,7 +525,8 @@ export default function SettingsView() {
             </section>
           </div>
         )}
-      </main>
+        </main>
+      </section>
 
       <QwenEmailDialog
         isOpen={showQwenDialog}

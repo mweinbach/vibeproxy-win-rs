@@ -32,6 +32,11 @@ function formatThinkingSummary(model: ProviderModelInfo): string {
   return "-";
 }
 
+function supportsThinking(model: ProviderModelInfo): boolean {
+  if (hasThinkingLevels(model).length > 0) return true;
+  return model.thinking?.min != null || model.thinking?.max != null;
+}
+
 export default function ModelsTab() {
   const [channel, setChannel] = useState("claude");
   const [search, setSearch] = useState("");
@@ -64,6 +69,11 @@ export default function ModelsTab() {
   }, [channel]);
 
   const allModels = modelsResponse?.models ?? [];
+  const thinkingReadyCount = useMemo(
+    () => allModels.filter((model) => supportsThinking(model)).length,
+    [allModels],
+  );
+
   const filteredModels = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (q === "") return allModels;
@@ -76,28 +86,26 @@ export default function ModelsTab() {
 
   return (
     <div className="tab-content animate-in">
-      <section className="settings-section">
-        <div className="section-header" data-tauri-drag-region>
-          <h2 className="section-title">Models</h2>
-          <p className="section-description">
-            Browse provider model catalogs from the CLIProxyAPIPlus runtime and install selections into Factory.
+      <h1 className="page-title">Models</h1>
+      <p className="page-subtitle">
+        Browse runtime model catalogs and install selections into Custom Models.
+      </p>
+
+      {lastInstallResult ? (
+        <div className="auth-result-banner success" role="status" aria-live="polite">
+          <p className="auth-result-message">
+            Installed for {lastInstallResult.agent_key}: added {lastInstallResult.added}, skipped {lastInstallResult.skipped_duplicates} duplicates.
           </p>
         </div>
+      ) : null}
 
-        {lastInstallResult ? (
-          <div className="auth-result-banner success" role="status" aria-live="polite">
-            <p className="auth-result-message">
-              Installed for {lastInstallResult.agent_key}: added {lastInstallResult.added}, skipped {lastInstallResult.skipped_duplicates} duplicates.
-            </p>
-          </div>
-        ) : null}
+      {lastError ? (
+        <div className="auth-result-banner error" role="alert">
+          <p className="auth-result-message">{lastError}</p>
+        </div>
+      ) : null}
 
-        {lastError ? (
-          <div className="auth-result-banner error" role="alert">
-            <p className="auth-result-message">{lastError}</p>
-          </div>
-        ) : null}
-
+      <section className="settings-section">
         <div className="models-toolbar">
           <label className="models-field">
             <span className="models-label">Provider</span>
@@ -134,6 +142,21 @@ export default function ModelsTab() {
               <RefreshCw size={14} className={isLoading ? "spin" : ""} />
               Refresh
             </button>
+          </div>
+        </div>
+
+        <div className="stats-grid">
+          <div className="stat-item">
+            <span className="stat-label">Available</span>
+            <span className="stat-value">{allModels.length}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Visible</span>
+            <span className="stat-value">{filteredModels.length}</span>
+          </div>
+          <div className="stat-item">
+            <span className="stat-label">Reasoning-ready</span>
+            <span className="stat-value">{thinkingReadyCount}</span>
           </div>
         </div>
 
