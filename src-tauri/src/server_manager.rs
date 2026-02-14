@@ -551,7 +551,7 @@ impl ServerManager {
 
         let current_pid = std::process::id();
         let mut pid_to_ports: HashMap<u32, Vec<u16>> = HashMap::new();
-        for (port, pid, process_name) in listeners {
+        for (port, pid, _process_name) in listeners {
             if (port == PROXY_PORT || port == BACKEND_PORT) && pid != current_pid {
                 pid_to_ports.entry(pid).or_default().push(port);
                 #[cfg(not(target_os = "windows"))]
@@ -561,7 +561,7 @@ impl ServerManager {
                         "[ServerManager] Port {} listener PID={} ({})",
                         port,
                         pid,
-                        process_name
+                        _process_name
                     );
                 }
             }
