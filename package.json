@@ -1,9 +1,9 @@
 {
   "name": "vibeproxy-win",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
-"scripts": {
+  "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "sync:cli-proxy-binary": "node ./scripts/sync-cli-proxy-binary.mjs",
