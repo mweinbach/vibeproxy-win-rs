@@ -1,6 +1,6 @@
 [package]
 name = "vibeproxy-win"
-version = "0.1.5"
+version = "0.1.6"
 description = "VibeProxy - OAuth authentication proxy and unified AI model router"
 authors = ["you"]
 edition = "2021"
