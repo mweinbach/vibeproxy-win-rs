@@ -28,6 +28,53 @@ const USER_AGENT = "vibeproxy-win-build-sync";
 let LAST_TMP_ARCHIVE = "";
 let LAST_TMP_EXTRACT_DIR = "";
 
+function codesignDarwinBinary(binaryPath) {
+  if (process.platform !== "darwin") return;
+
+  const identity = (process.env.APPLE_SIGNING_IDENTITY || "").trim();
+  if (!identity) return;
+
+  console.log(
+    `[sync-cli-proxy-binary] codesigning ${path.basename(binaryPath)}...`,
+  );
+
+  const signResult = spawnSync(
+    "codesign",
+    [
+      "--force",
+      "--timestamp",
+      "--options",
+      "runtime",
+      "--sign",
+      identity,
+      binaryPath,
+    ],
+    { encoding: "utf8", stdio: "pipe" },
+  );
+
+  if (signResult.status !== 0) {
+    throw new Error(
+      `codesign failed with code ${signResult.status}: ${
+        signResult.stderr || signResult.stdout || "unknown error"
+      }`,
+    );
+  }
+
+  const verifyResult = spawnSync(
+    "codesign",
+    ["--verify", "--verbose=2", binaryPath],
+    { encoding: "utf8", stdio: "pipe" },
+  );
+
+  if (verifyResult.status !== 0) {
+    throw new Error(
+      `codesign verify failed with code ${verifyResult.status}: ${
+        verifyResult.stderr || verifyResult.stdout || "unknown error"
+      }`,
+    );
+  }
+}
+
 function normalizeArch(rawValue) {
   if (!rawValue) return null;
   const value = rawValue.trim().toLowerCase();
@@ -315,6 +362,9 @@ async function main() {
   await rename(extractedBinary, OUTPUT_BINARY);
   if (process.platform !== "win32") {
     await chmod(OUTPUT_BINARY, 0o755);
+  }
+  if (target.platform === "darwin") {
+    codesignDarwinBinary(OUTPUT_BINARY);
   }
   await writeFile(OUTPUT_VERSION, `${version}\n`, "utf8");
 
