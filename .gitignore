@@ -35,3 +35,7 @@ src-tauri/resources/cli-proxy-api-plus.version
 src-tauri/resources/cli-proxy-api-plus.*.version
 src-tauri/resources/cli-proxy-api-plus.download.*
 src-tauri/resources/cli-proxy-api-plus.extract.tmp/
+
+# Local artifacts (imagegen, temp work)
+/output/
+/tmp/
