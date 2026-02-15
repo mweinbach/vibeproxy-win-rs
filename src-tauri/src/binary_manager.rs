@@ -141,7 +141,7 @@ fn binary_download_client() -> &'static reqwest::Client {
 
 pub fn get_binary_path() -> PathBuf {
     let base = dirs::data_local_dir().unwrap_or_else(std::env::temp_dir);
-    base.join("vibeproxy").join(runtime_binary_name())
+    base.join("codeforwarder").join(runtime_binary_name())
 }
 
 pub fn get_bundled_binary_path(app_handle: &tauri::AppHandle) -> Option<PathBuf> {
@@ -210,7 +210,7 @@ pub async fn get_latest_release_info() -> Result<ReleaseInfo, String> {
     let client = release_lookup_client();
     let resp = client
         .get(RELEASES_API_URL)
-        .header("User-Agent", "vibeproxy-win")
+        .header("User-Agent", "codeforwarder")
         .send()
         .await
         .map_err(|e| format!("Failed to fetch latest release: {}", e))?;
@@ -276,7 +276,7 @@ pub async fn get_latest_release_info() -> Result<ReleaseInfo, String> {
 
         let checksum_manifest = client
             .get(checksum_manifest_url)
-            .header("User-Agent", "vibeproxy-win")
+            .header("User-Agent", "codeforwarder")
             .send()
             .await
             .map_err(|e| format!("Failed to download checksum manifest: {}", e))?;
@@ -322,7 +322,7 @@ pub async fn download_binary(
     let client = binary_download_client();
     let resp = client
         .get(&release.download_url)
-        .header("User-Agent", "vibeproxy-win")
+        .header("User-Agent", "codeforwarder")
         .send()
         .await
         .map_err(|e| format!("Failed to start download: {}", e))?;

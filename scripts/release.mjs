@@ -117,15 +117,15 @@ function main() {
   try {
     runSilent(`gh release view ${tag}`);
     console.log(`GitHub release ${tag} already exists, updating title/notes.`);
-    run(`gh release edit ${tag} --title "VibeProxy ${tag}" --notes "${releaseNotes}"`);
+    run(`gh release edit ${tag} --title "CodeForwarder ${tag}" --notes "${releaseNotes}"`);
   } catch {
-    run(`gh release create ${tag} --title "VibeProxy ${tag}" --notes "${releaseNotes}"`);
+    run(`gh release create ${tag} --title "CodeForwarder ${tag}" --notes "${releaseNotes}"`);
   }
 
   console.log("Release workflows will run automatically on tag push (v*).");
 
   console.log(`\nDone! Release ${tag} created. CI will build and upload artifacts for this tag.`);
-  console.log(`https://github.com/mweinbach/vibeproxy-win-rs/releases/tag/${tag}\n`);
+  console.log(`https://github.com/mweinbach/CodeForwarder/releases/tag/${tag}\n`);
 }
 
 main();

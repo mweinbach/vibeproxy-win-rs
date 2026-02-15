@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "vibeproxy-win",
+      "name": "codeforwarder",
       "dependencies": {
         "@tauri-apps/api": "^2",
         "@tauri-apps/plugin-notification": "^2.3.3",

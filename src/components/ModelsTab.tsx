@@ -194,7 +194,7 @@ export default function ModelsTab() {
 
       <AgentModelInstallDialog
         isOpen={showInstallDialog}
-        agentKey="vibeproxy"
+        agentKey="codeforwarder"
         agentLabel="Custom Models"
         defaultDisplayPrefix=""
         initialChannel={channel}

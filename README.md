@@ -1,6 +1,6 @@
-# VibeProxy (macOS + Windows + Linux)
+# CodeForwarder (macOS + Windows + Linux)
 
-VibeProxy is a desktop app (macOS + Windows + Linux) that runs a local OAuth/authentication proxy and unified model router on `http://localhost:8317`.
+CodeForwarder is a desktop app (macOS + Windows + Linux) that runs a local OAuth/authentication proxy and unified model router on `http://localhost:8317`.
 
 It’s built with **Tauri 2 (Rust)** + **React 19 / Vite / TypeScript**, and bundles (or downloads) the **CLIProxyAPIPlus** runtime used to perform provider logins and serve the backend API.
 
@@ -62,12 +62,12 @@ Point your client/tooling at:
 ## Local files & storage
 
 - Auth/account files: `~/.cli-proxy-api/` (JSON)
-  - VibeProxy also writes `merged-config.yaml` here when providers are toggled or Z.AI keys are added.
-- Downloaded runtime binary: `%LOCALAPPDATA%\vibeproxy\cli-proxy-api-plus.exe`
-- Downloaded runtime binary (macOS): `~/Library/Application Support/vibeproxy/cli-proxy-api-plus`
-- Downloaded runtime binary (Linux): `~/.local/share/vibeproxy/cli-proxy-api-plus`
+  - CodeForwarder also writes `merged-config.yaml` here when providers are toggled or Z.AI keys are added.
+- Downloaded runtime binary: `%LOCALAPPDATA%\codeforwarder\cli-proxy-api-plus.exe`
+- Downloaded runtime binary (macOS): `~/Library/Application Support/codeforwarder/cli-proxy-api-plus`
+- Downloaded runtime binary (Linux): `~/.local/share/codeforwarder/cli-proxy-api-plus`
 - App settings: stored via Tauri Store (`settings.json`), with the Vercel API key encrypted using Windows DPAPI (base64 fallback on non-Windows).
-- Usage analytics DB: `~/.cli-proxy-api/vibeproxy-usage.db` (local-only)
+- Usage analytics DB: `~/.cli-proxy-api/codeforwarder-usage.db` (local-only)
 
 ## Updating the bundled runtime
 
@@ -93,6 +93,6 @@ To skip this step (CI/offline builds), set `SKIP_CLI_PROXY_SYNC=1`.
 ## Releases & Auto-Updates
 
 - The app uses the Tauri updater plugin and checks GitHub Releases metadata at:
-  - `https://github.com/mweinbach/vibeproxy-win-rs/releases/latest/download/latest.json`
+  - `https://github.com/mweinbach/CodeForwarder/releases/latest/download/latest.json`
 - Release builds (including updater signatures and macOS notarization) run automatically when pushing a tag like `v0.1.4`.
 - `scripts/release.mjs` bumps versions, creates the tag and GitHub release; the CI tag trigger does the rest.

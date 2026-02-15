@@ -711,7 +711,7 @@ mod tests {
 
     fn make_temp_settings_path() -> PathBuf {
         let root = std::env::temp_dir().join(format!(
-            "vibeproxy-factory-settings-test-{}",
+            "codeforwarder-factory-settings-test-{}",
             Uuid::new_v4().to_string()
         ));
         root.join(".factory").join("settings.json")

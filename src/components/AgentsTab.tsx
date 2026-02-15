@@ -11,7 +11,7 @@ import { toErrorMessage } from "../utils/error";
 import AgentModelInstallDialog from "./AgentModelInstallDialog";
 import CustomModelEditDialog from "./CustomModelEditDialog";
 
-const FACTORY_NAMESPACE_KEY = "vibeproxy";
+const FACTORY_NAMESPACE_KEY = "codeforwarder";
 
 export default function AgentsTab() {
   const [state, setState] = useState<FactoryCustomModelsState | null>(null);
@@ -131,7 +131,7 @@ export default function AgentsTab() {
     <div className="tab-content animate-in">
       <h1 className="page-title">Custom Models</h1>
       <p className="page-subtitle">
-        Manage Factory custom models powered by VibeProxy.
+        Manage Factory custom models powered by CodeForwarder.
       </p>
 
       {lastAddResult ? (

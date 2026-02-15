@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::path::{Path, PathBuf};
 
 use crate::auth_manager;
-use crate::types::{UsageBreakdownRow, UsageSummary, UsageTimeseriesPoint, VibeUsageDashboard};
+use crate::types::{UsageBreakdownRow, UsageDashboard, UsageSummary, UsageTimeseriesPoint};
 
 #[derive(Debug, Clone, Copy)]
 pub enum UsageRangeQuery {
@@ -83,7 +83,7 @@ pub struct UsageTracker {
 
 impl UsageTracker {
     pub fn new() -> Result<Self, String> {
-        let db_path = auth_manager::get_auth_dir().join("vibeproxy-usage.db");
+        let db_path = auth_manager::get_auth_dir().join("codeforwarder-usage.db");
         let tracker = Self { db_path };
         tracker.init_schema()?;
         Ok(tracker)
@@ -419,10 +419,10 @@ impl UsageTracker {
         .map_err(|e| format!("Failed to join usage write task: {}", e))?
     }
 
-    pub async fn get_vibe_dashboard(
+    pub async fn get_usage_dashboard(
         &self,
         range: UsageRangeQuery,
-    ) -> Result<VibeUsageDashboard, String> {
+    ) -> Result<UsageDashboard, String> {
         let db_path = self.db_path.clone();
         tokio::task::spawn_blocking(move || {
             let conn = Self::open_connection(&db_path)?;
@@ -653,7 +653,7 @@ impl UsageTracker {
                 });
             }
 
-            Ok(VibeUsageDashboard {
+            Ok(UsageDashboard {
                 range: range.as_key().to_string(),
                 summary,
                 timeseries,

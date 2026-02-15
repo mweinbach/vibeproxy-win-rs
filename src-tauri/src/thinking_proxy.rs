@@ -528,8 +528,8 @@ fn infer_provider_from_path_and_model(path: &str, model: &str) -> String {
 
 fn extract_account_hint(headers: &hyper::HeaderMap, body: &str) -> Option<String> {
     let header_keys = [
-        "x-vibeproxy-account",
-        "x-vibeproxy-account-id",
+        "x-codeforwarder-account",
+        "x-codeforwarder-account-id",
         "x-auth-account",
         "x-auth-index",
         "x-account-id",

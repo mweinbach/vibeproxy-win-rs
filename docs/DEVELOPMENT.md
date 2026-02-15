@@ -24,9 +24,9 @@ Note: `bun run tauri dev` and `bun run tauri build` automatically run `sync:cli-
 - `src-tauri/resources/cli-proxy-api-plus` (macOS/Linux) and `src-tauri/resources/cli-proxy-api-plus.exe` (Windows) are the bundled runtimes used in packaged builds.
 - On startup, backend code resolves a runnable binary in this order:
 1. Platform data dir:
-   - Windows: `%LOCALAPPDATA%\vibeproxy\cli-proxy-api-plus.exe`
-   - macOS: `~/Library/Application Support/vibeproxy/cli-proxy-api-plus`
-   - Linux: `~/.local/share/vibeproxy/cli-proxy-api-plus` (or `$XDG_DATA_HOME/vibeproxy/cli-proxy-api-plus`)
+   - Windows: `%LOCALAPPDATA%\codeforwarder\cli-proxy-api-plus.exe`
+   - macOS: `~/Library/Application Support/codeforwarder/cli-proxy-api-plus`
+   - Linux: `~/.local/share/codeforwarder/cli-proxy-api-plus` (or `$XDG_DATA_HOME/codeforwarder/cli-proxy-api-plus`)
 2. bundled resource binary (`src-tauri/resources/cli-proxy-api-plus*`)
  - If bundled exists but local copy does not, it is copied into the platform data directory when possible.
 
@@ -40,7 +40,7 @@ Note: `bun run tauri dev` and `bun run tauri build` automatically run `sync:cli-
 - Auth accounts directory: `~/.cli-proxy-api/`
 - Merged config output: `~/.cli-proxy-api/merged-config.yaml`
 - Settings store: Tauri Store `settings.json`
-- Usage analytics DB: `~/.cli-proxy-api/vibeproxy-usage.db`
+- Usage analytics DB: `~/.cli-proxy-api/codeforwarder-usage.db`
 - Sensitive values:
   - `vercel_api_key` in settings is encrypted via DPAPI (`secure_store.rs`)
   - Z.AI keys are stored in `~/.cli-proxy-api/zai-*.json` with encrypted `api_key`
@@ -63,7 +63,7 @@ Note: `bun run tauri dev` and `bun run tauri build` automatically run `sync:cli-
 ## Auto-updates (Tauri updater)
 
 - The updater plugin is enabled in `src-tauri/tauri.conf.json` and points at:
-  - `https://github.com/mweinbach/vibeproxy-win-rs/releases/latest/download/latest.json`
+  - `https://github.com/mweinbach/CodeForwarder/releases/latest/download/latest.json`
 - The frontend checks for updates at startup (throttled to once per 24 hours) and supports manual checks in the Settings tab.
 - Release builds must publish:
   - platform installers (DMG/EXE/MSI/AppImage/DEB),

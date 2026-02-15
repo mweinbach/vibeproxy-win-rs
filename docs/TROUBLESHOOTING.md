@@ -47,7 +47,7 @@ In Services → Claude:
 
 - Add a Z.AI key in Services.
 - Ensure Z.AI provider is enabled.
-- VibeProxy generates `~/.cli-proxy-api/merged-config.yaml`; check that it includes `openai-compatibility` with `name: zai`.
+- CodeForwarder generates `~/.cli-proxy-api/merged-config.yaml`; check that it includes `openai-compatibility` with `name: zai`.
 
 ## Build failures
 

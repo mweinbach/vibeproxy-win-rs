@@ -52,15 +52,15 @@ export default function UsageDashboard({
   error,
   onDismissError,
 }: UsageDashboardProps) {
-  const vibe = dashboard.vibe;
-  const providerBreakdown = getProviderBreakdown(vibe.breakdown);
+  const usage = dashboard.dashboard;
+  const providerBreakdown = getProviderBreakdown(usage.breakdown);
   const totalProviderTokens = providerBreakdown.reduce(
     (sum, row) => sum + row.tokens,
     0,
   );
   const maxPointTokens = Math.max(
     1,
-    ...vibe.timeseries.map((point) => point.total_tokens),
+    ...usage.timeseries.map((point) => point.total_tokens),
   );
   const maxProviderTokens = Math.max(
     1,
@@ -116,37 +116,37 @@ export default function UsageDashboard({
         <div className="stat-item">
           <span className="stat-label">Total Tokens</span>
           <span className="stat-value">
-            {formatNumber(vibe.summary.total_tokens)}
+            {formatNumber(usage.summary.total_tokens)}
           </span>
         </div>
         <div className="stat-item">
           <span className="stat-label">Input</span>
           <span className="stat-value">
-            {formatNumber(vibe.summary.input_tokens)}
+            {formatNumber(usage.summary.input_tokens)}
           </span>
         </div>
         <div className="stat-item">
           <span className="stat-label">Output</span>
           <span className="stat-value">
-            {formatNumber(vibe.summary.output_tokens)}
+            {formatNumber(usage.summary.output_tokens)}
           </span>
         </div>
         <div className="stat-item">
           <span className="stat-label">Cached</span>
           <span className="stat-value">
-            {formatNumber(vibe.summary.cached_tokens)}
+            {formatNumber(usage.summary.cached_tokens)}
           </span>
         </div>
         <div className="stat-item">
           <span className="stat-label">Reasoning</span>
           <span className="stat-value">
-            {formatNumber(vibe.summary.reasoning_tokens)}
+            {formatNumber(usage.summary.reasoning_tokens)}
           </span>
         </div>
         <div className="stat-item">
           <span className="stat-label">Error Rate</span>
           <span className="stat-value">
-            {formatPercent(vibe.summary.error_rate)}
+            {formatPercent(usage.summary.error_rate)}
           </span>
         </div>
       </div>
@@ -154,11 +154,11 @@ export default function UsageDashboard({
       <div className="usage-grid-two">
         <section className="settings-section usage-insight-card usage-trend-card">
           <h2 className="section-title">Token Trend</h2>
-          {vibe.timeseries.length === 0 ? (
+          {usage.timeseries.length === 0 ? (
             <p className="empty-note">No usage events yet for this range.</p>
           ) : (
             <div className="token-chart">
-              {vibe.timeseries.map((point) => (
+              {usage.timeseries.map((point) => (
                 <div
                   className="token-bar"
                   key={`${point.bucket}-${point.total_tokens}`}
@@ -217,9 +217,9 @@ export default function UsageDashboard({
         </section>
       </div>
 
-      <section className="settings-section usage-breakdown-section">
-        <h2 className="section-title">Detailed Breakdown</h2>
-        {vibe.breakdown.length === 0 ? (
+        <section className="settings-section usage-breakdown-section">
+          <h2 className="section-title">Detailed Breakdown</h2>
+        {usage.breakdown.length === 0 ? (
           <p className="empty-note">No detailed usage data available yet.</p>
         ) : (
           <div className="usage-table-wrap">
@@ -237,7 +237,7 @@ export default function UsageDashboard({
                 </tr>
               </thead>
               <tbody>
-                {vibe.breakdown.map((row) => (
+                {usage.breakdown.map((row) => (
                   <tr key={`${row.provider}-${row.model}-${row.account_key}`}>
                     <td>{row.provider}</td>
                     <td>{row.model}</td>

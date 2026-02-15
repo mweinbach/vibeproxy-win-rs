@@ -1,16 +1,16 @@
 [package]
-name = "vibeproxy-win"
+name = "codeforwarder"
 version = "0.1.10"
-description = "VibeProxy - OAuth authentication proxy and unified AI model router"
+description = "CodeForwarder - OAuth authentication proxy and unified AI model router"
 authors = ["you"]
 edition = "2021"
 
 [[bin]]
-name = "VibeProxy"
+name = "CodeForwarder"
 path = "src/main.rs"
 
 [lib]
-name = "vibeproxy_win_lib"
+name = "codeforwarder_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

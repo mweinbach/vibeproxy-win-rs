@@ -2,7 +2,7 @@
 
 ## High-level flow
 
-VibeProxy runs two local servers:
+CodeForwarder runs two local servers:
 
 - `127.0.0.1:8317` - **ThinkingProxy** (Rust, in-process HTTP proxy)
 - `127.0.0.1:8318` - **CLIProxyAPIPlus** (external process: `cli-proxy-api-plus` / `cli-proxy-api-plus.exe`)
@@ -82,7 +82,7 @@ Core modules in `src-tauri/src/`:
 
 Base config ships at `src-tauri/resources/config.yaml`.
 
-VibeProxy writes merged config to:
+CodeForwarder writes merged config to:
 
 - `~/.cli-proxy-api/merged-config.yaml`
 
@@ -90,13 +90,13 @@ Changes applied by the merger:
 
 - `oauth-excluded-models`: adds provider keys marked disabled in UI
 - `openai-compatibility`: injects `zai` endpoint + API key entries and common GLM model aliases
-- `remote-management.secret-key`: generated and managed by VibeProxy for internal local native usage reads
+- `remote-management.secret-key`: generated and managed by CodeForwarder for internal local native usage reads
 - `remote-management.allow-remote`: forced to `false`
 
 ## Usage analytics data
 
-- Local database path: `~/.cli-proxy-api/vibeproxy-usage.db`
-- VibeProxy-tracked events are first-party and local-only.
+- Local database path: `~/.cli-proxy-api/codeforwarder-usage.db`
+- CodeForwarder-tracked events are first-party and local-only.
 - Native comparison data is temporary, best-effort, and shown side-by-side in the Usage tab.
 
 ## Security model (practical)

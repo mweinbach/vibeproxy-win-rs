@@ -400,8 +400,11 @@ pub async fn get_usage_dashboard(
 ) -> Result<UsageDashboardPayload, String> {
     let range = range.unwrap_or_else(|| "7d".to_string());
     let parsed_range = UsageRangeQuery::from_input(&range);
-    let vibe = state.usage_tracker.get_vibe_dashboard(parsed_range).await?;
-    Ok(UsageDashboardPayload { vibe })
+    let dashboard = state
+        .usage_tracker
+        .get_usage_dashboard(parsed_range)
+        .await?;
+    Ok(UsageDashboardPayload { dashboard })
 }
 
 // ---------------------------------------------------------------------------

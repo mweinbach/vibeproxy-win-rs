@@ -6,7 +6,7 @@ use std::fs;
 use std::path::PathBuf;
 use uuid::Uuid;
 
-const MANAGED_KEY_FILE: &str = "vibeproxy-managed-remote-key.json";
+const MANAGED_KEY_FILE: &str = "codeforwarder-managed-remote-key.json";
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ManagedKeyFile {

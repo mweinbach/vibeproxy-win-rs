@@ -5,5 +5,5 @@
 )]
 
 fn main() {
-    vibeproxy_win_lib::run()
+    codeforwarder_lib::run()
 }

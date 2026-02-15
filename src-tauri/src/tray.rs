@@ -69,7 +69,7 @@ pub fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
         // macOS: treat the icon as a template so the system automatically tints it
         // (light/dark menu bar, vibrancy, etc).
         .icon_as_template(cfg!(target_os = "macos"))
-        .tooltip("VibeProxy")
+        .tooltip("CodeForwarder")
         .menu(&menu)
         // macOS status-bar icons conventionally show the menu on left click.
         .show_menu_on_left_click(cfg!(target_os = "macos"))
@@ -290,9 +290,9 @@ pub fn update_tray_state(app: &AppHandle, is_running: bool) {
 
         // Update tooltip
         let tooltip = if is_running {
-            "VibeProxy - Running (port 8317)"
+            "CodeForwarder - Running (port 8317)"
         } else {
-            "VibeProxy - Stopped"
+            "CodeForwarder - Stopped"
         };
         tray.set_tooltip(Some(tooltip)).ok();
     }

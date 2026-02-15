@@ -508,7 +508,7 @@ export default function AgentModelInstallDialog({
                   placeholder="e.g. 4000, 10000, 32000"
                 />
                 <div className="agent-model-hint">
-                  Budgets above ~32000 will be clamped by VibeProxy.
+                  Budgets above ~32000 will be clamped by CodeForwarder.
                 </div>
               </div>
 

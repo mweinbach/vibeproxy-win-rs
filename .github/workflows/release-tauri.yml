@@ -54,7 +54,7 @@ jobs:
           if gh release view "$TAG" >/dev/null 2>&1; then
             exit 0
           fi
-          gh release create "$TAG" --title "VibeProxy $TAG" --notes "Release $TAG"
+          gh release create "$TAG" --title "CodeForwarder $TAG" --notes "Release $TAG"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -101,7 +101,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          KEYCHAIN_PATH="$RUNNER_TEMP/vibeproxy-signing.keychain-db"
+          KEYCHAIN_PATH="$RUNNER_TEMP/codeforwarder-signing.keychain-db"
           KEYCHAIN_PASSWORD="$(uuidgen)"
 
           echo "$APPLE_CERTIFICATE_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
@@ -160,9 +160,9 @@ jobs:
           fi
 
           BUNDLE_DIR="src-tauri/target/${{ matrix.target }}/release/bundle/macos"
-          SRC="$BUNDLE_DIR/VibeProxy.app.tar.gz"
+          SRC="$BUNDLE_DIR/CodeForwarder.app.tar.gz"
           SRC_SIG="$SRC.sig"
-          DST="$BUNDLE_DIR/VibeProxy_${VERSION}_${ARCH}.app.tar.gz"
+          DST="$BUNDLE_DIR/CodeForwarder_${VERSION}_${ARCH}.app.tar.gz"
           DST_SIG="$DST.sig"
 
           if [ ! -f "$SRC" ] || [ ! -f "$SRC_SIG" ]; then
@@ -215,7 +215,7 @@ jobs:
       - name: Upload workflow artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: vibeproxy-${{ matrix.platform }}
+          name: codeforwarder-${{ matrix.platform }}
           if-no-files-found: error
           path: |
             src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
@@ -304,7 +304,7 @@ jobs:
           }
 
           # Notes:
-          # - macOS: VibeProxy_${VERSION}_${ARCH}.app.tar.gz (renamed per-arch in this workflow)
+          # - macOS: CodeForwarder_${VERSION}_${ARCH}.app.tar.gz (renamed per-arch in this workflow)
           # - Windows: NSIS installer exe
           # - Linux: AppImage
           # If any are missing, fail so updates don't break silently.
@@ -336,4 +336,4 @@ jobs:
               }
             }' > latest.json
 
-          gh release upload "$TAG" latest.json --clobber
+          gh release upload "$TAG" latest.json --repo "$REPO" --clobber

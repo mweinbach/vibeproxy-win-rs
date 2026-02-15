@@ -199,7 +199,7 @@ pub struct UsageBreakdownRow {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VibeUsageDashboard {
+pub struct UsageDashboard {
     pub range: String,
     pub summary: UsageSummary,
     pub timeseries: Vec<UsageTimeseriesPoint>,
@@ -208,7 +208,7 @@ pub struct VibeUsageDashboard {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct UsageDashboardPayload {
-    pub vibe: VibeUsageDashboard,
+    pub dashboard: UsageDashboard,
 }
 
 // ---------------------------------------------------------------------------

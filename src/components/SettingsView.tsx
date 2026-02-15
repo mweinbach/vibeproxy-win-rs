@@ -96,7 +96,7 @@ const TAB_ITEMS: Array<{
   {
     key: "agents",
     label: "Custom Models",
-    description: "Manage Factory custom models powered by VibeProxy.",
+    description: "Manage Factory custom models powered by CodeForwarder.",
     icon: Bot,
     group: "configuration",
   },
@@ -344,10 +344,10 @@ export default function SettingsView() {
       {shouldShowCustomTitleBar() ? <TitleBar /> : null}
       <aside className="sidebar" data-tauri-drag-region>
         <div className="sidebar-header" data-tauri-drag-region>
-          <img src={GLYPH_MAP[themeMode]} alt="VibeProxy" className="app-hero-icon" />
+          <img src={GLYPH_MAP[themeMode]} alt="CodeForwarder" className="app-hero-icon" />
           <div>
             <p className="sidebar-eyebrow">Control Center</p>
-            <span className="sidebar-title">VibeProxy</span>
+            <span className="sidebar-title">CodeForwarder</span>
           </div>
         </div>
 
@@ -558,7 +558,7 @@ export default function SettingsView() {
               <div className="setting-row">
                 <div className="setting-label">
                   <span>Launch at login</span>
-                  <small>Start VibeProxy automatically.</small>
+                  <small>Start CodeForwarder automatically.</small>
                 </div>
                 <label className="toggle-switch">
                   <input

@@ -90,7 +90,7 @@ export interface UsageBreakdownRow {
   last_seen: string | null;
 }
 
-export interface VibeUsageDashboard {
+export interface UsageDashboard {
   range: UsageRange;
   summary: UsageSummary;
   timeseries: UsageTimeseriesPoint[];
@@ -98,7 +98,7 @@ export interface VibeUsageDashboard {
 }
 
 export interface UsageDashboardPayload {
-  vibe: VibeUsageDashboard;
+  dashboard: UsageDashboard;
 }
 
 export const SERVICE_DISPLAY_NAMES: Record<ServiceType, string> = {

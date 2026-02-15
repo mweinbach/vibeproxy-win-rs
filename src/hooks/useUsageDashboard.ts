@@ -6,7 +6,7 @@ import { toErrorMessage } from "../utils/error";
 const DEFAULT_RANGE: UsageRange = "7d";
 
 const EMPTY_DASHBOARD: UsageDashboardPayload = {
-  vibe: {
+  dashboard: {
     range: DEFAULT_RANGE,
     summary: {
       total_requests: 0,

@@ -25,7 +25,7 @@ fn managed_pid_file() -> PathBuf {
     let base = dirs::data_local_dir()
         .or_else(dirs::home_dir)
         .unwrap_or_else(std::env::temp_dir);
-    base.join("vibeproxy").join("managed-server.pid")
+    base.join("codeforwarder").join("managed-server.pid")
 }
 
 fn persist_managed_pid(pid: u32) {
@@ -517,7 +517,7 @@ impl ServerManager {
             };
 
             // PID may have been reused; only kill processes that look like ours.
-            if !is_vibeproxy_managed_process(&command) {
+            if !is_codeforwarder_managed_process(&command) {
                 clear_managed_pid();
                 return;
             }
@@ -590,7 +590,7 @@ impl ServerManager {
                 ));
             };
 
-            if !is_vibeproxy_managed_process(&image_name) {
+            if !is_codeforwarder_managed_process(&image_name) {
                 return Err(format!(
                     "Ports {:?} are in use by {} (PID {}). Close that process and try again.",
                     ports, image_name, pid
@@ -928,9 +928,9 @@ fn parse_tasklist_csv_image_name(line: &str) -> Option<String> {
         .map(|part| part.trim().to_string())
 }
 
-fn is_vibeproxy_managed_process(image_name: &str) -> bool {
+fn is_codeforwarder_managed_process(image_name: &str) -> bool {
     let lower = image_name.to_ascii_lowercase();
-    lower.contains("vibeproxy") || lower.contains("cli-proxy-api")
+    lower.contains("codeforwarder") || lower.contains("cli-proxy-api")
 }
 
 /// Extract the device code from Copilot CLI output.

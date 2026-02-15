@@ -23,7 +23,7 @@ const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(SCRIPT_DIR, "..");
 const OUTPUT_DIR = path.join(REPO_ROOT, "src-tauri", "resources");
 
-const USER_AGENT = "vibeproxy-win-build-sync";
+const USER_AGENT = "codeforwarder-build-sync";
 
 let LAST_TMP_ARCHIVE = "";
 let LAST_TMP_EXTRACT_DIR = "";

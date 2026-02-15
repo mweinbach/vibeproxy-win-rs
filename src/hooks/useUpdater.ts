@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { check, type DownloadEvent } from "@tauri-apps/plugin-updater";
 
-const LAST_UPDATE_CHECK_STORAGE_KEY = "vibeproxy.lastUpdateCheckAt";
+const LAST_UPDATE_CHECK_STORAGE_KEY = "codeforwarder.lastUpdateCheckAt";
 const AUTO_CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000;
 
 type UpdaterStatus =

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "VibeProxy",
+  "productName": "CodeForwarder",
   "version": "0.1.10",
-  "identifier": "com.mweinbach.vibeproxy",
+  "identifier": "com.mweinbach.codeforwarder",
   "build": {
     "beforeDevCommand": "bun run sync:cli-proxy-binary && bun run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "VibeProxy",
+        "title": "CodeForwarder",
         "width": 800,
         "height": 600,
         "resizable": true,
@@ -48,7 +48,7 @@
     "updater": {
       "active": true,
       "endpoints": [
-        "https://github.com/mweinbach/vibeproxy-win-rs/releases/latest/download/latest.json"
+        "https://github.com/mweinbach/CodeForwarder/releases/latest/download/latest.json"
       ],
       "dialog": false,
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM2RTZDMzdFOUE2M0I0QTQKUldTa3RHT2Fmc1BtTmh6bVNiRGFiQ2JTcDRBMVVVYVpvc1FtVVhRbEViUWh2eTlNLzdaUUU2ckMK"

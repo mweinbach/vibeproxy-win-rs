@@ -136,7 +136,7 @@ pub fn run() {
                         .set_title_bar_style(tauri::TitleBarStyle::Overlay)
                         .ok();
                     // Ensure the window title matches the app product name.
-                    window.set_title("VibeProxy").ok();
+                    window.set_title("CodeForwarder").ok();
                 }
             }
 
