@@ -44,17 +44,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure GitHub release exists
+      - name: Ensure GitHub release exists as draft
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            exit 0
+          REPO="${GITHUB_REPOSITORY}"
+
+          if ! gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --repo "$REPO" \
+              --title "CodeForwarder $TAG" \
+              --notes "Release $TAG" \
+              --draft || true
           fi
-          gh release create "$TAG" --title "CodeForwarder $TAG" --notes "Release $TAG"
+
+          # Keep the release private until latest.json is generated and uploaded.
+          gh release edit "$TAG" --repo "$REPO" --draft
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -336,4 +344,44 @@ jobs:
               }
             }' > latest.json
 
+          jq -e '
+            (.version | type == "string" and length > 0) and
+            (.pub_date | type == "string" and length > 0) and
+            (.notes | type == "string") and
+            (.platforms | type == "object") and
+            (.platforms["darwin-aarch64"].url | type == "string" and length > 0) and
+            (.platforms["darwin-aarch64"].signature | type == "string" and length > 0) and
+            (.platforms["darwin-x86_64"].url | type == "string" and length > 0) and
+            (.platforms["darwin-x86_64"].signature | type == "string" and length > 0) and
+            (.platforms["windows-x86_64"].url | type == "string" and length > 0) and
+            (.platforms["windows-x86_64"].signature | type == "string" and length > 0) and
+            (.platforms["windows-aarch64"].url | type == "string" and length > 0) and
+            (.platforms["windows-aarch64"].signature | type == "string" and length > 0) and
+            (.platforms["linux-x86_64"].url | type == "string" and length > 0) and
+            (.platforms["linux-x86_64"].signature | type == "string" and length > 0)
+          ' latest.json >/dev/null
+
           gh release upload "$TAG" latest.json --repo "$REPO" --clobber
+
+  publish-release:
+    name: Publish release
+    runs-on: ubuntu-latest
+    needs: [publish-latest-json]
+    permissions:
+      contents: write
+    steps:
+      - name: Publish GitHub release after latest.json upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          REPO="${GITHUB_REPOSITORY}"
+
+          HAS_LATEST_JSON="$(gh release view "$TAG" --repo "$REPO" --json assets --jq '.assets | any(.name == "latest.json")')"
+          if [ "$HAS_LATEST_JSON" != "true" ]; then
+            echo "latest.json is missing from release $TAG"
+            exit 1
+          fi
+
+          gh release edit "$TAG" --repo "$REPO" --draft=false --latest

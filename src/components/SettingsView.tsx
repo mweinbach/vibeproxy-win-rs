@@ -211,6 +211,7 @@ export default function SettingsView() {
 
   const updateStatusLabel = (() => {
     if (updateStatus === "checking") return "Checking...";
+    if (updateStatus === "unavailable") return "Update server unavailable.";
     if (updateStatus === "downloading") {
       if (progressPercent !== null) return `Downloading (${progressPercent}%)...`;
       return "Downloading...";
@@ -523,7 +524,7 @@ export default function SettingsView() {
                   <small>
                     {updateStatusLabel}{" "}
                     {availableVersion ? `Available: ${availableVersion}.` : ""}
-                    {updateStatus === "error" && updateError ? ` ${updateError}` : ""}
+                    {updateError ? ` ${updateError}` : ""}
                   </small>
                   <small>{updateCheckedAtLabel}</small>
                 </div>

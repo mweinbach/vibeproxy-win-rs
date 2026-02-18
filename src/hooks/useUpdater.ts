@@ -8,6 +8,7 @@ type UpdaterStatus =
   | "idle"
   | "checking"
   | "up_to_date"
+  | "unavailable"
   | "downloading"
   | "ready_to_restart"
   | "error";
@@ -43,6 +44,32 @@ function persistLastUpdateCheckAt(value: number): void {
     return;
   }
   window.localStorage.setItem(LAST_UPDATE_CHECK_STORAGE_KEY, String(value));
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return "Failed to update app";
+}
+
+function isNonFatalUpdateCheckError(error: unknown): boolean {
+  const message = getErrorMessage(error).toLowerCase();
+  return (
+    message.includes("status code") ||
+    message.includes("failed to fetch") ||
+    message.includes("network") ||
+    message.includes("timed out") ||
+    message.includes("timeout") ||
+    message.includes("dns") ||
+    message.includes("connection refused") ||
+    message.includes("connection reset") ||
+    message.includes("service unavailable") ||
+    message.includes("temporarily unavailable") ||
+    message.includes("could not resolve") ||
+    message.includes("release json") ||
+    message.includes("latest.json")
+  );
 }
 
 export function useUpdater() {
@@ -81,8 +108,10 @@ export function useUpdater() {
       setDownloadedBytes(0);
       setContentLength(null);
 
+      let isCheckPhase = true;
       try {
         const update = await check();
+        isCheckPhase = false;
         const checkedAt = Date.now();
         persistLastUpdateCheckAt(checkedAt);
         setLastCheckedAt(checkedAt);
@@ -110,10 +139,21 @@ export function useUpdater() {
         setStatus("ready_to_restart");
         await update.close();
       } catch (error) {
+        if (isCheckPhase && isNonFatalUpdateCheckError(error)) {
+          const checkedAt = Date.now();
+          persistLastUpdateCheckAt(checkedAt);
+          setLastCheckedAt(checkedAt);
+          setStatus("unavailable");
+          setLastError(
+            "Update server is currently unavailable. The app will retry later."
+          );
+          console.warn("[updater] Update check unavailable:", error);
+          return;
+        }
+
         setStatus("error");
-        setLastError(
-          error instanceof Error ? error.message : "Failed to update app"
-        );
+        setLastError(getErrorMessage(error));
+        console.error("[updater] Update failed:", error);
       } finally {
         isCheckingRef.current = false;
       }
