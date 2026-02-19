@@ -1,0 +1,19 @@
+{
+  "app": {
+    "windows": [
+      {
+        "title": "CodeForwarder",
+        "width": 800,
+        "height": 600,
+        "resizable": true,
+        "decorations": false,
+        "center": true,
+        "label": "main",
+        "visible": true,
+        "closable": true,
+        "minimizable": true,
+        "maximizable": true
+      }
+    ]
+  }
+}

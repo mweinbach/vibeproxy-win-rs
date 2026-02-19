@@ -187,11 +187,17 @@ html[data-platform="macos"] .macos-drag-strip {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  padding: 48px 16px 16px;
+  padding: 16px;
   border-right: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(40px) saturate(1.8);
   -webkit-backdrop-filter: blur(40px) saturate(1.8);
+}
+
+html[data-platform="windows"] .sidebar {
+  padding-top: 48px;
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
 }
 
 html[data-theme="dark"] .sidebar {
@@ -878,6 +884,10 @@ select:focus {
     align-items: center;
     overflow-x: auto;
     gap: 8px;
+  }
+
+  html[data-platform="windows"] .sidebar {
+    padding-top: 48px;
   }
 
   html[data-platform="macos"] .sidebar {

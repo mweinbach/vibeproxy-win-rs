@@ -143,6 +143,13 @@ function isMacOS(): boolean {
   return /Macintosh|Mac OS X/.test(navigator.userAgent);
 }
 
+function isWindows(): boolean {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+  return /Windows/.test(navigator.userAgent);
+}
+
 function getInitialThemeMode(): ThemeMode {
   if (typeof window === "undefined") {
     return "light";
@@ -342,13 +349,18 @@ function useSettingsView() {
     clearAccountsError();
   };
 
-  const useNativeMacWindowChrome = isTauriRuntime() && isMacOS();
+  const tauriRuntime = isTauriRuntime();
+  const useCustomWindowsWindowChrome = tauriRuntime && isWindows();
+  const useNativeMacWindowChrome = tauriRuntime && isMacOS();
 
   return (
     <div className="settings-view grid h-full w-full overflow-hidden">
-      {!useNativeMacWindowChrome ? <TitleBar /> : null}
+      {useCustomWindowsWindowChrome ? <TitleBar /> : null}
       <aside className="sidebar flex min-w-0 flex-col border-r border-[color:var(--border)]">
-        <div className="sidebar-header flex items-center gap-2" data-tauri-drag-region>
+        <div
+          className="sidebar-header flex items-center gap-2"
+          data-tauri-drag-region={useCustomWindowsWindowChrome ? "" : undefined}
+        >
           <div>
             <p className="sidebar-eyebrow text-[10px] font-semibold tracking-[0.08em] text-[color:var(--text-muted)] uppercase">Control Center</p>
             <span className="sidebar-title">CodeForwarder</span>
