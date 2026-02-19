@@ -8,7 +8,8 @@
 
 :root {
   --font-ui: "Inter", "SF Pro Text", "Segoe UI Variable Text", system-ui, sans-serif;
-  --mac-traffic-lights-clearance: 56px;
+  --mac-traffic-lights-clearance: 52px;
+  --mac-titlebar-drag-strip-height: 30px;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -139,6 +140,17 @@ a:hover {
   flex: 1;
   height: 100%;
   min-width: 0;
+}
+
+.macos-drag-strip {
+  display: none;
+}
+
+html[data-platform="macos"] .macos-drag-strip {
+  display: block;
+  height: var(--mac-titlebar-drag-strip-height);
+  flex-shrink: 0;
+  background: transparent;
 }
 
 .window-buttons {
@@ -365,10 +377,6 @@ html[data-theme="dark"] .sidebar-item.active {
   z-index: 6;
   display: flow-root;
   background: var(--bg-1);
-}
-
-html[data-platform="macos"] .tab-header {
-  margin-top: -6px;
 }
 
 .animate-in {

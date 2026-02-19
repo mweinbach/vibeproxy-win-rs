@@ -143,11 +143,6 @@ function isMacOS(): boolean {
   return /Macintosh|Mac OS X/.test(navigator.userAgent);
 }
 
-function shouldShowCustomTitleBar(): boolean {
-  // On macOS we use the native traffic lights with an overlay titlebar.
-  return !(isTauriRuntime() && isMacOS());
-}
-
 function getInitialThemeMode(): ThemeMode {
   if (typeof window === "undefined") {
     return "light";
@@ -347,10 +342,12 @@ function useSettingsView() {
     clearAccountsError();
   };
 
+  const useNativeMacWindowChrome = isTauriRuntime() && isMacOS();
+
   return (
     <div className="settings-view grid h-full w-full overflow-hidden">
-      {shouldShowCustomTitleBar() ? <TitleBar /> : null}
-      <aside className="sidebar flex min-w-0 flex-col border-r border-[color:var(--border)]" data-tauri-drag-region>
+      {!useNativeMacWindowChrome ? <TitleBar /> : null}
+      <aside className="sidebar flex min-w-0 flex-col border-r border-[color:var(--border)]">
         <div className="sidebar-header flex items-center gap-2" data-tauri-drag-region>
           <div>
             <p className="sidebar-eyebrow text-[10px] font-semibold tracking-[0.08em] text-[color:var(--text-muted)] uppercase">Control Center</p>
@@ -402,7 +399,10 @@ function useSettingsView() {
       </aside>
 
       <section className="app-shell min-w-0">
-        <main className="settings-scroll h-full" ref={settingsScrollRef}>
+        {useNativeMacWindowChrome ? (
+          <div className="macos-drag-strip" data-tauri-drag-region aria-hidden="true" />
+        ) : null}
+        <main className="settings-scroll" ref={settingsScrollRef}>
           {activeTab === "dashboard" && (
             <div className="tab-content animate-in flex flex-col gap-6 pb-6">
               <TabHeader
@@ -440,7 +440,7 @@ function useSettingsView() {
               </div>
 
               <section className="settings-section">
-                <div className="section-header" data-tauri-drag-region>
+                <div className="section-header">
                   <div className="section-title-row flex items-center gap-2 text-[color:var(--text-muted)]">
                     <Server size={14} />
                     <h2 className="section-title">Proxy Engine</h2>
